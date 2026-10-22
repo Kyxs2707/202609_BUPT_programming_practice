@@ -10,7 +10,7 @@
 
 **Spec:** [MYB 解释器设计](./MYB解释器设计.md)；语言行为以 [MYB 语言规范](./MYB语言规范.md) v0.2（含 2026-10-22 D63 澄清）为准；完整课程交付顺序见 [项目实施步骤](./superpowers/plans/2026-10-11-myb-implementation.md)。
 
-状态：2026-10-22 编写，**待用户审阅，未开始执行**。本文件中的文件、命令、测试和提交均是未来任务；当前仓库没有产品代码、构建工程或测试驱动。此次工作不运行下列构建命令，不安装工具，不导入依赖。
+状态：用户于 2026-10-22 明确要求“好，你先完成M1吧”，已授权任务 01–06。**M1 已于 2026-10-23 完成实现与验收；M2–M4 未启动。** 独立构建、源码前端与堆模块并行实施，由根代理集成并安排一次独立整体审查。实测命令、范围与调整见 [构建与测试](./构建与测试.md) 和 [测试报告](./测试报告.md)。
 
 ## Global Constraints（全局约束）
 
@@ -40,7 +40,7 @@
 
 ## 文件职责与统一接口
 
-所有下列路径相对仓库根；目标文件目前均未实现。每任务列出的测试源需加入任务 01 的内部目标，blackbox 分组同时滚动聚合进默认 manifest：直接汇总cases并按默认manifest目录换算fixture路径，不增加include/import清单语法。中间版本只验收已实现子集，不把未实现分支的临时行为当作最终 MYB 规则。
+所有下列路径相对仓库根；任务 01–06 的 M1 文件已实现，其余文件按所属任务逐步建立。每任务列出的测试源需加入任务 01 的内部目标，blackbox 分组同时滚动聚合进默认 manifest：直接汇总cases并按默认manifest目录换算fixture路径，不增加include/import清单语法。中间版本只验收已实现子集，不把未实现分支的临时行为当作最终 MYB 规则。
 
 每项红测试附最小代码锚点和精确预期；片段中的first、span、ops、unit等属于该测试的局部夹具，按本任务接口完成构造，不新增产品辅助API。中文C++源按UTF-8编译，测试期望按显式字节核对，不能依赖编辑器本机编码。
 
@@ -85,9 +85,9 @@
 | M3 完整运行时 | 12–16 | 数组/结构/for、深复制与显示、21 内置、Windows 文本 I/O |
 | M4 验收 | 17–18 | 故障/资源/诊断、全部黑盒、干净/并行/Release 构建与复现文档 |
 
-任务按编号推进；每项独立提交，成功用例和故障协议均需验收。安装/定位工具属于任务 01 的未来执行工作；缺工具不是语义红测试证据。运行命令前使用 UCRT64 环境或配置当前 PowerShell 进程 PATH，项目路径不硬编码到共享 CMake。
+任务按依赖推进，成功用例和故障协议均需验收。M1 的独立模块并行实施，最终统一提交一个可构建的里程碑，避免中间 CMake 引用尚未提交的文件；后续任务仍按任务组织提交。安装/定位工具已在任务 01 完成；缺工具不是语义红测试证据。运行命令前使用 UCRT64 环境或配置当前 PowerShell 进程 PATH，项目路径不硬编码到共享 CMake。
 
-下列命令只供执行阶段使用。CMake 将可执行文件输出到对应构建目录根，以下全使用 Windows PowerShell：
+下列命令为构建复现示例。CMake 将可执行文件输出到对应构建目录根，以下全使用 Windows PowerShell：
 
 ```powershell
 cmake -S . -B build/debug -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_COMPILER=D:/msys64/ucrt64/bin/g++.exe -DCMAKE_C_COMPILER=D:/msys64/ucrt64/bin/gcc.exe -DFLEX_EXECUTABLE=D:/msys64/usr/bin/flex.exe -DBISON_EXECUTABLE=D:/msys64/usr/bin/bison.exe -DMYB_BUILD_INTERNAL_TESTS=ON
@@ -106,8 +106,8 @@ python tools/run_blackbox.py --interpreter build/debug/myb.exe --manifest tests/
 
 **Interfaces:** Produces myb_core、myb_decimal_ryu、可选 myb_internal_tests 目标及上述测试入口；驱动 CLI/manifest 严格采用设计格式，返回 0 全通过/1 失败或超时/2 参数或 manifest 错误。此时尚无 myb 执行目标，不伪造源文件检查成功。
 
-- [ ] **1. 核验未来执行环境。** 读取 GCC/Flex/Bison/CMake/Ninja/Python 版本，定位或补齐缺少的原生工具；核验 fast_float v8.3.2 和 Ryu 59661c3 的完整 SHA/文件哈希/许可，并在 manifest 记录。固定快照无法满足契约时记录证据、修订对应依赖条目，不放宽 D72。
-- [ ] **2. 写红测试。** toolchain case 要求 `__cplusplus==202002L`、double 为 binary64、span 可用；原始依赖把 `1.25` 解析为 1.25、Ryu 输出可提取同值。Python unittest 用独立 child_fixture 固定输出 `b"a\r\nb\n"`、stderr 和退出 7，证明正确预期通过、错误预期/超时失败、下一例仍运行、`../` 副作用路径被拒绝。
+- [x] **1. 核验未来执行环境。** 读取 GCC/Flex/Bison/CMake/Ninja/Python 版本，定位或补齐缺少的原生工具；核验 fast_float v8.3.2 和 Ryu 59661c3 的完整 SHA/文件哈希/许可，并在 manifest 记录。固定快照无法满足契约时记录证据、修订对应依赖条目，不放宽 D72。
+- [x] **2. 写红测试。** toolchain case 要求 `__cplusplus==202002L`、double 为 binary64、span 可用；原始依赖把 `1.25` 解析为 1.25、Ryu 输出可提取同值。Python unittest 用独立 child_fixture 固定输出 `b"a\r\nb\n"`、stderr 和退出 7，证明正确预期通过、错误预期/超时失败、下一例仍运行、`../` 副作用路径被拒绝。
 
 ```cpp
 MYB_TEST(toolchain) {
@@ -116,10 +116,10 @@ MYB_TEST(toolchain) {
     REQUIRE(std::numeric_limits<double>::digits == 53);
 }
 ```
-- [ ] **3. 确认红。** 在工具可用后尝试配置/目标编译及 `python -m unittest discover -s tests/driver -v`，记录实现缺失导致的失败，明确不是安装环境缺失。
-- [ ] **4. 实现。** 建立目标、最小断言/故障接缝和驱动。生成物/build 忽略，产物按 Debug/Release 隔离；驱动二进制捕获、隔离 cwd、严格 UTF-8 regex 与 `$SCRIPT` 转义，不 shell 启动。
-- [ ] **5. 验证绿。** `cmake --build build/debug --target myb_internal_tests --parallel`；`& .\build\debug\myb_internal_tests.exe --case toolchain`；重跑上述 unittest，均返回 0。实际坏 golden/死循环由自测 fixture 检出，不把故意失败例纳入正式全绿集。
-- [ ] **6. 提交。** 核对 dev/派生分支、暂存本项源/测试/依赖许可与文档、`git diff --cached --check` 后提交 `build: establish UCRT targets and black-box harness`；不提交 build、工具安装或生成源码。
+- [x] **3. 确认红。** 在工具可用后尝试配置/目标编译及 `python -m unittest discover -s tests/driver -v`，记录实现缺失导致的失败，明确不是安装环境缺失。
+- [x] **4. 实现。** 建立目标、最小断言/故障接缝和驱动。生成物/build 忽略，产物按 Debug/Release 隔离；驱动二进制捕获、隔离 cwd、严格 UTF-8 regex 与 `$SCRIPT` 转义，不 shell 启动。
+- [x] **5. 验证绿。** `cmake --build build/debug --target myb_internal_tests --parallel`；`& .\build\debug\myb_internal_tests.exe --case toolchain`；重跑上述 unittest，均返回 0。实际坏 golden/死循环由自测 fixture 检出，不把故意失败例纳入正式全绿集。
+- [x] **6. 提交。** 按本计划开头的并行实施调整，随 M1 可构建里程碑统一提交源码、固定依赖、测试和文档；不纳入 build、工具安装或生成源码。
 
 ### 任务 02：源码位置、基础首错和宿主入口字节通路
 
@@ -127,7 +127,7 @@ MYB_TEST(toolchain) {
 
 **Interfaces:** Produces `SourceManager(EmergencyFailure&)` 的 add/get/locate/slice、FailureHeader/EmergencyFailure/三类异常 `.header()`、Utf8Sink、HostIO；本项实现 read_entry、标准流识别/宽字符输出，逐行/程序文件接口在16实现。`utf8::decode_one(string_view,size_t) noexcept->optional<DecodedCodePoint{value,width}>` 不自行决定错误阶段；SourceManager 赋予源码归属。
 
-- [ ] **1. 写红测试。** source_positions 对 BOM＋`中\t😀\r\nx\ry\n`（17字节）断言 offset7=1:3、13=2:1、15=3:1、17=4:1，slice[3,11)为8字节；`ok\n\xFF` 错误偏移3。failure_first 先登记 Runtime/Type，再模拟 bad_alloc，首错类别保持 1。
+- [x] **1. 写红测试。** source_positions 对 BOM＋`中\t😀\r\nx\ry\n`（17字节）断言 offset7=1:3、13=2:1、15=3:1、17=4:1，slice[3,11)为8字节；`ok\n\xFF` 错误偏移3。failure_first 先登记 Runtime/Type，再模拟 bad_alloc，首错类别保持 1。
 
 ```cpp
 EmergencyFailure first;
@@ -137,10 +137,10 @@ REQUIRE(sources.get(id).bytes.size() == 17);
 REQUIRE(sources.locate(id, 7).column == 3);
 REQUIRE(sources.locate(id, 17).line == 4);
 ```
-- [ ] **2. 确认红。** 重建并运行 `--case source_positions`、`--case failure_first`，预期缺少接口/位置或首错断言失败；宿主入口读文件测试使用临时中文/含空格路径，不运行 MYB。
-- [ ] **3. 实现。** 原字节/路径独立持有；先保存记录、严格验证再建立行索引；BOM/CRLF/CR/Tab/EOF 按全局约束。所有容量和偏移检查在增长前。失败先记录固定头再构造详情；read_entry 保留原字节、宽路径、真实错误码，未使用的无效标准流不提前失败。
-- [ ] **4. 验证绿。** 重跑两 case，增加 `--case entry_io`，全为0；空文件 EOF=1:1、非法编码不替换继续、无位置不伪造、越界/跨源 span 为 Internal、U+2028 不增行；输出逐字节含 NUL，入口 I/O 故障可由调用者映射2。
-- [ ] **5. 提交。** 暂存本项文件及 CMake；检查后提交 `feat: add source positions and controlled failure boundaries`。
+- [x] **2. 确认红。** 重建并运行 `--case source_positions`、`--case failure_first`，预期缺少接口/位置或首错断言失败；宿主入口读文件测试使用临时中文/含空格路径，不运行 MYB。
+- [x] **3. 实现。** 原字节/路径独立持有；先保存记录、严格验证再建立行索引；BOM/CRLF/CR/Tab/EOF 按全局约束。所有容量和偏移检查在增长前。失败先记录固定头再构造详情；read_entry 保留原字节、宽路径、真实错误码，未使用的无效标准流不提前失败。
+- [x] **4. 验证绿。** 重跑两 case，增加 `--case entry_io`，全为0；空文件 EOF=1:1、非法编码不替换继续、无位置不伪造、越界/跨源 span 为 Internal、U+2028 不增行；输出逐字节含 NUL，入口 I/O 故障可由调用者映射2。
+- [x] **5. 提交。** 按本计划开头的并行实施调整，随 M1 可构建里程碑统一提交源码、固定依赖、测试和文档；不纳入 build、工具安装或生成源码。
 
 ### 任务 03：严格十进制解析与 D72 浮点排版
 
@@ -148,7 +148,7 @@ REQUIRE(sources.locate(id, 17).line == 4);
 
 **Interfaces:** Consumes 01 固定快照、02 宿主故障；Produces统一 NumericParseResult/ParseMode、DecimalCodec 三方法。方法只处理标量/宿主文本，不创建受管对象，不把正常 Content/Range 失败登记为首错。
 
-- [ ] **1. 写红测试。** decimal_codec 要求源码 `.5/1./1e/NaN` Content，转换 `" +01e2 "` 为100.0、`"-1e-9999"` 为 signbit=true 的0、`"1e9999"` Range；int `"-9223372036854775808"` 为MIN、正幅值2^63为Range。format 精确断言 `1.0`、`1000.0`、`1e+16`、`0.0001`、`1e-5`、`-0.0`。
+- [x] **1. 写红测试。** decimal_codec 要求源码 `.5/1./1e/NaN` Content，转换 `" +01e2 "` 为100.0、`"-1e-9999"` 为 signbit=true 的0、`"1e9999"` Range；int `"-9223372036854775808"` 为MIN、正幅值2^63为Range。format 精确断言 `1.0`、`1000.0`、`1e+16`、`0.0001`、`1e-5`、`-0.0`。
 
 ```cpp
 EmergencyFailure first;
@@ -159,10 +159,10 @@ auto p = DecimalCodec::parse_float(
 REQUIRE(p.value && *p.value == 1.0); // 精确二进制中点，取偶
 REQUIRE(DecimalCodec::format_float(-0.0) == "-0.0");
 ```
-- [ ] **2. 确认红。** 重建并运行 `& .\build\debug\myb_internal_tests.exe --case decimal_codec`，记录解析/排版未实现的失败。
-- [ ] **3. 实现。** 预校验 MYB 文法、转换仅裁 ASCII 空白/处理正号；fast_float 必须完整消费，只接受成功有限值或范围错误且结果为带符号零。Ryu _n 用32字节缓冲和返回长度，提取并规范化 c×10^q 后按最终 e 排版；设置/验证 FE_TONEAREST，不用 locale/默认 ostream。
-- [ ] **4. 验证绿。** 同 case 为0；独立位模式断言最大有限/最小次正规/中点取偶、负零、2^53 两侧与指数阈值邻居；固定随机种子补充回读位相同，独立 golden 验证 shortest/nearest/even，不能只做回读。try 解析失败不污染 EmergencyFailure，宿主故障不转 Content/Range。
-- [ ] **5. 提交。** 审核固定契约后提交 `feat: implement exact numeric parsing and display codec`。
+- [x] **2. 确认红。** 重建并运行 `& .\build\debug\myb_internal_tests.exe --case decimal_codec`，记录解析/排版未实现的失败。
+- [x] **3. 实现。** 预校验 MYB 文法、转换仅裁 ASCII 空白/处理正号；fast_float 必须完整消费，只接受成功有限值或范围错误且结果为带符号零。Ryu _n 用32字节缓冲和返回长度，提取并规范化 c×10^q 后按最终 e 排版；设置/验证 FE_TONEAREST，不用 locale/默认 ostream。
+- [x] **4. 验证绿。** 同 case 为0；独立位模式断言最大有限/最小次正规/中点取偶、负零、2^53 两侧与指数阈值邻居；固定随机种子补充回读位相同，独立 golden 验证 shortest/nearest/even，不能只做回读。try 解析失败不污染 EmergencyFailure，宿主故障不转 Content/Range。
+- [x] **5. 提交。** 按本计划开头的并行实施调整，随 M1 可构建里程碑统一提交源码、固定依赖、测试和文档；不纳入 build、工具安装或生成源码。
 
 ### 任务 04：从首次分配接入 Value、根、Heap 与受控增长
 
@@ -170,7 +170,7 @@ REQUIRE(DecimalCodec::format_float(-0.0) == "-0.0");
 
 **Interfaces:** Consumes 02 的首错/Utf8Sink/UTF-8；Produces七类 Value、独立 BindingState、稳定 RootRegistry/RootedValue/NativeRootSet、Marker::mark(Value)、Heap::collect()/clear()、make_array(size_t,out)、make_struct(const StructSchema&,out)、make_string(TextBuilder&&,out)、reserve_array(ArrayRef,size_t)。StructSchema持有id/name和有序FieldSchema，FieldType保存TypeKind、可选SchemaId及nullable；FieldConstraint为FieldType别名，语义检查与运行时共用类型编号。TextBuilder(Heap&) 实现 Utf8Sink 的 append、reserve、bytes，不可复制；make_string接管缓冲时转账且不重复释放，不要求移动根提供者。
 
-- [ ] **1. 写红测试。** heap_roots 建自含数组/共享别名，仅一个根时 collect 后live=1，撤完根后live=0；可增长 NativeRootSet 模拟未启动 VM 的常量集合，内部 vector 扩容后仍保活。heap_growth 在逐允许点 GC 下验证数组/子对象身份不变、`北邮😀\0` 字节和码点计数、旧输出根失败时仍保护。
+- [x] **1. 写红测试。** heap_roots 建自含数组/共享别名，仅一个根时 collect 后live=1，撤完根后live=0；可增长 NativeRootSet 模拟未启动 VM 的常量集合，内部 vector 扩容后仍保活。heap_growth 在逐允许点 GC 下验证数组/子对象身份不变、`北邮😀\0` 字节和码点计数、旧输出根失败时仍保护。
 
 ```cpp
 EmergencyFailure first;
@@ -181,10 +181,10 @@ Heap heap(roots, first);
 heap.collect();
 REQUIRE(TestHooks::heap_counts(heap).live == 0);
 ```
-- [ ] **2. 确认红。** 重建并运行 `--case heap_roots`、`--case heap_growth`，期望根/分配/追踪或记账断言失败，而非可执行文件不存在。
-- [ ] **3. 实现。** Schema/字段按设计稳定、具名类型身份明确；Heap vector<unique_ptr> 拥有不移动对象。根侵入式无分配注册、集合回调枚举；迭代 mark，完整成功才 sweep。构造→登记→输出根发布段不 GC，析构不跟随子边；Builder/数组容量实际记账、1MiB/倍2与大请求阈值，bad_alloc 不自动重试。
-- [ ] **4. 验证绿。** 两 case 为0；Object/Registry/Payload 故障无悬空登记/重复记账，MarkWorklist 故障不 sweep、marked=0、collecting=false、live不变；clear 后live=0。Schema 比Heap对象活得久；单值根不登记容器槽地址，Builder在Heap前销毁。
-- [ ] **5. 提交。** 审查根覆盖、故障收尾和增长算术后提交 `feat: add rooted values and nonmoving managed heap`。不允许先提交有受管分配却没有根/可用回收的中间实现。
+- [x] **2. 确认红。** 重建并运行 `--case heap_roots`、`--case heap_growth`，期望根/分配/追踪或记账断言失败，而非可执行文件不存在。
+- [x] **3. 实现。** Schema/字段按设计稳定、具名类型身份明确；Heap vector<unique_ptr> 拥有不移动对象。根侵入式无分配注册、集合回调枚举；迭代 mark，完整成功才 sweep。构造→登记→输出根发布段不 GC，析构不跟随子边；Builder/数组容量实际记账、1MiB/倍2与大请求阈值，bad_alloc 不自动重试。
+- [x] **4. 验证绿。** 两 case 为0；Object/Registry/Payload 故障无悬空登记/重复记账，MarkWorklist 故障不 sweep、marked=0、collecting=false、live不变；clear 后live=0。Schema 比Heap对象活得久；单值根不登记容器槽地址，Builder在Heap前销毁。
+- [x] **5. 提交。** 按本计划开头的并行实施调整，随 M1 可构建里程碑统一提交源码、固定依赖、测试和文档；不纳入 build、工具安装或生成源码。
 
 ### 任务 05：AST、Flex/Bison 与最小检查链
 
@@ -192,7 +192,7 @@ REQUIRE(TestHooks::heap_counts(heap).live == 0);
 
 **Interfaces:** Consumes 02/03/04；Produces全部设计节点/纯虚只读 AstVisitor、`AstFactory(EmergencyFailure&)`、`AstFactory::make<T>(SourceSpan,Args&&...)->unique_ptr<T>`、Node::height()/accept()、Driver/Checker/CheckedAst。Create `src/runtime/operators.hpp` 共用UnaryOp{Plus,Minus,Not}、BinaryOp{Add,Subtract,Multiply,Divide,FloorDivide,Modulo}、CompareOp{Equal,NotEqual,Less,LessEqual,Greater,GreaterEqual}，不让 AST/VM 各定义一套；LiteralTable 保存宿主字面量，不含受管 Value。先实现表达式/命名调用/简单语句的最小可执行语法，完整文法在07扩展。
 
-- [ ] **1. 写红测试。** ast_contract 验证叶高1、Group链256后再接父抛 Resource/Capacity、程序根也计层、经基类删除完整、accept只访问当前节点；遗漏任何具体visit的Visitor仍abstract。frontend_smoke 对 `print(1 + 2);` 断言一顶层ExprStmt→Call(print)→Binary(Add)，并检查各token真实字节范围；非法字符不输出ECHO，空文件返回空根。
+- [x] **1. 写红测试。** ast_contract 验证叶高1、Group链256后再接父抛 Resource/Capacity、程序根也计层、经基类删除完整、accept只访问当前节点；遗漏任何具体visit的Visitor仍abstract。frontend_smoke 对 `print(1 + 2);` 断言一顶层ExprStmt→Call(print)→Binary(Add)，并检查各token真实字节范围；非法字符不输出ECHO，空文件返回空根。
 
 ```cpp
 static_assert(std::has_virtual_destructor_v<Node>);
@@ -202,10 +202,10 @@ std::unique_ptr<Expr> e = factory.make<IntExpr>(span, std::string("1"));
 for (int i = 1; i < 256; ++i) e = factory.make<GroupExpr>(span, std::move(e));
 REQUIRE(e->height() == 256);
 ```
-- [ ] **2. 确认红。** 构建内部目标并运行 `--case ast_contract`、`--case frontend_smoke`，记录所有权/扫描解析/侧表未实现导致的失败。
-- [ ] **3. 实现。** 节点含虚 noexcept 析构、Group/省略端点/原字段源序与深只读访问；按 max(child.height)+1 在连接前限高。前端采用已定完整symbol接口、yyextra、可写副本双NUL、消费字节定位、%initial-action/YYLLOC_DEFAULT；EOF显式symbol，语法/词法抛1、fatal资源/内部抛3，分配登记兜底部分初始化。CMake 明确 generated/parser.hpp 包含依赖。
-- [ ] **4. 验证绿。** 两case为0；正常→失败→正常连续解析相互独立，注入FlexAllocation失败后活跃扫描分配归零；内部NUL不截断、开头BOM/CRLF/CR与完整非法码点位置正确。Checker至少建立整数/浮点字面量侧表并保留直接负MIN例外，不执行动态运算。
-- [ ] **5. 提交。** 仅暂存手写源、测试和 CMake，提交 `feat: connect owned AST to reentrant Flex and Bison`；不暂存生成源码/头。
+- [x] **2. 确认红。** 构建内部目标并运行 `--case ast_contract`、`--case frontend_smoke`，记录所有权/扫描解析/侧表未实现导致的失败。
+- [x] **3. 实现。** 节点含虚 noexcept 析构、Group/省略端点/原字段源序与深只读访问；按 max(child.height)+1 在连接前限高。前端采用已定完整symbol接口、yyextra、可写副本双NUL、消费字节定位、%initial-action/YYLLOC_DEFAULT；EOF显式symbol，语法/词法抛1、fatal资源/内部抛3，分配登记兜底部分初始化。CMake 明确 generated/parser.hpp 包含依赖。核验 Flex 2.6.4 生成后端仍使用 int 保存缓冲长度，复制前拒绝超过 INT_MAX 字节的源码，按 Resource/Capacity 退出 3，避免 size_t 到 int 窄化。
+- [x] **4. 验证绿。** 两case为0；正常→失败→正常连续解析相互独立，注入FlexAllocation失败后活跃扫描分配归零；内部NUL不截断、开头BOM/CRLF/CR与完整非法码点位置正确。Checker至少建立整数/浮点字面量侧表并保留直接负MIN例外，不执行动态运算。
+- [x] **5. 提交。** 按本计划开头的并行实施调整，随 M1 可构建里程碑统一提交源码、固定依赖、测试和文档；不纳入 build、工具安装或生成源码。
 
 ### 任务 06：标量字节码、CLI 与第一组 MYB 黑盒
 
@@ -213,15 +213,15 @@ REQUIRE(e->height() == 256);
 
 **Interfaces:** Consumes 01–05；Produces固定Instruction/CompiledProgram/CodeUnit、compile/execute、NativeFn/NativeContext、Session寿命和 VmFixture/TestRun。`parse_options(span<const string_view>)->Options{mode,file}` 只解析已确认 CLI；wmain 先严格转换宽参数。此阶段生成/执行 CONST、BINARY(Add/Div)、PRECALL/CALL、DROP、HALT，native提供print/write及标量显示；其余能力在所属任务实现，不伪造检查成功或悄悄跳过节点。
 
-- [ ] **1. 写红测试。** smoke/three.myb=`print(1 + 2);`，stdout=`b"3\n"`、stderr空、exit0；`print(1/0);` 为Arithmetic/1；缺少源文件为2且无虚构行列；`print(1 + );` 前端1。`--check` 对正常脚本为0且两流空、不读取stdin。`print(write("X"),1);` 在数量预检处1，stdout空。
+- [x] **1. 写红测试。** smoke/three.myb=`print(1 + 2);`，stdout=`b"3\n"`、stderr空、exit0；`print(1/0);` 为Arithmetic/1；缺少源文件为2且无虚构行列；`print(1 + );` 前端1。`--check` 对正常脚本为0且两流空、不读取stdin。`print(write("X"),1);` 在数量预检处1，stdout空。
 
 ```myb
 print(1 + 2);
 ```
-- [ ] **2. 确认红。** 按全局Debug配置构建，运行 `python tools/run_blackbox.py --interpreter build/debug/myb.exe --manifest tests/blackbox/smoke/manifest.json`，新MYB用例应因缺少执行链而失败；把配置/链接问题与语义红测试分开记录。
-- [ ] **3. 实现。** Session 先调用DecimalCodec::initialize，再严格组织 Source→Driver→Checker→compile/verify→VM，--check只到生成结束；Program地址稳定，常量和VM/全局提供者先登记，统一输出根接管。加入 myb 入口 -municode、帮助/版本、--、错误分类和基本报告；运行时仍做命名目标/数量预检。print/write在实参全求完后回调，结果不裸交接。
-- [ ] **4. 验证绿。** 同黑盒命令和 `--case smoke_pipeline` 均为0；内部MemoryHostIO计数确认--check的stdin读取/内置回调次数为0，另以非法UTF-8 stdin的检查用例证明不执行read_line。--help/--version为0、版本精确 `myb 0.1.0 (language 0.2)\n`；多文件/未知选项/无文件为2；中文和带空格源路径可运行、--后连字符路径可读、不强制.myb后缀。Resource注入经统一边界为3，不冒充null。
-- [ ] **5. 提交。** 检查M1全内部测试及默认黑盒后提交 `feat: execute the first MYB bytecode pipeline`；保存已运行命令/输出到构建与测试文档，明确这是开发中的语言子集。
+- [x] **2. 确认红。** 按全局Debug配置构建，运行 `python tools/run_blackbox.py --interpreter build/debug/myb.exe --manifest tests/blackbox/smoke/manifest.json`，新MYB用例应因缺少执行链而失败；把配置/链接问题与语义红测试分开记录。
+- [x] **3. 实现。** Session 先调用DecimalCodec::initialize，再严格组织 Source→Driver→Checker→compile/verify→VM，--check只到生成结束；Program地址稳定，常量和VM/全局提供者先登记，统一输出根接管。加入 myb 入口 -municode、帮助/版本、--、错误分类和基本报告；运行时仍做命名目标/数量预检。print/write在实参全求完后回调，结果不裸交接。
+- [x] **4. 验证绿。** 同黑盒命令和 `--case smoke_pipeline` 均为0；内部MemoryHostIO计数确认--check的stdin读取/内置回调次数为0，另以非法UTF-8 stdin的检查用例证明不执行read_line。--help/--version为0、版本精确 `myb 0.1.0 (language 0.2)\n`；多文件/未知选项/无文件为2；中文和带空格源路径可运行、--后连字符路径可读、不强制.myb后缀。Resource注入经统一边界为3，不冒充null。
+- [x] **5. 提交。** 按本计划开头的并行实施调整，随 M1 可构建里程碑统一提交源码、固定依赖、测试和文档；不纳入 build、工具安装或生成源码。
 
 ## M2：完整前端、变量控制流与函数
 

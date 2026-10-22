@@ -126,7 +126,7 @@ std::unique_ptr<AstProgram> Driver::parse();
 
 Bison 使用 `%skeleton "lalr1.cc"`、`%define api.value.type variant`、`%define api.token.constructor`、`%locations` 和 `%define api.location.type {myb::SourceSpan}`。`%parse-param` 与 `%lex-param` 均显式传入 `Driver&`；解析器调用上面的 `yylex(Driver&)`。词法入口返回完整 `Parser::symbol_type`，例如 `make_IDENTIFIER(owned_name, span)`、`make_INT(IntLexeme, span)`；不启用 `bison-bridge`、`bison-locations`，不分传 `yylval/yylloc`。自定义 `YYLLOC_DEFAULT` 将非空产生式的位置合并为首符号起点至末符号终点，空产生式使用前一个符号末尾的空范围；通过 `%initial-action` 将初始位置设为该 SourceId 的源码起点。
 
-Flex 使用 reentrant C 后端，以 C++20 编译；句柄私有，不泄露到 AST 或编译产物。用 `yyextra` 保存 `ScannerContext*`，不依赖可变全局。使用 `yy_scan_buffer`，输入为 `Scanner` 拥有的原字节副本加两个 NUL 哨兵；缓冲区存在期间不移动或扩容。原文件内部 NUL 仍是输入字符，不是 EOF。这里选择副本换取清楚的尺寸与所有权，不借用或修改 `SourceManager` 的不可变字符串；避免 `yy_scan_bytes` 的 `int` 长度窄化与 `yy_scan_string` 的 NUL 截断。
+Flex 使用 reentrant C 后端，以 C++20 编译；句柄私有，不泄露到 AST 或编译产物。用 `yyextra` 保存 `ScannerContext*`，不依赖可变全局。使用 `yy_scan_buffer`，输入为 `Scanner` 拥有的原字节副本加两个 NUL 哨兵；缓冲区存在期间不移动或扩容。原文件内部 NUL 仍是输入字符，不是 EOF。这里选择副本换取清楚的尺寸与所有权，不借用或修改 `SourceManager` 的不可变字符串；避免 `yy_scan_bytes` 的入口长度窄化与 `yy_scan_string` 的 NUL 截断。M1 核验 Flex 2.6.4 生成源码后确认，`yy_scan_buffer` 内部仍将字节长度保存为 int；因此复制前显式核验源码不超过 INT_MAX 字节，超限为 Resource/Capacity（退出 3），不因接口参数是 size_t 而承诺超出生成后端的容量。
 
 `YY_USER_ACTION` 按当前规则实际匹配的 `yyleng` 字节建立 `matched` 并推进 `consumed`；预读、缓冲填充不改变源码位置。规则不使用 `REJECT`、`yymore`、`yyless`、`unput`，因此位置只前进一次；开启 `noinput nounput noyywrap nodefault`。跳过空白、注释和开头 BOM 的规则同样推进。字符串使用独立扫描状态，记录开引号偏移，各片段都更新消费位置，闭引号返回涵盖整个字面量的范围。源 UTF-8 已验证；转义解码仍检查未知转义、1–6 位 `\u{HEX}`、标量上限及代理区，字符串不能直接跨任何获接纳的源码换行。
 
@@ -849,7 +849,7 @@ Float64 → Int64 转换先检查 `-0x1p63 <= d && d < 0x1p63`，再作安全的
 
 **本稿新增建议**：将十进制到 binary64 的解析封装为 `DecimalCodec::parse_float(text, mode)`，使用 fast_float；最短十进制生成使用 Ryu，经同一封装按 D72 排版。它们是宿主支持算法，不是新增 MYB 库/语法或换用另一门宿主语言。避免为满足精确舍入和极小数规则临时自创数值算法；代价是两份需标明来源与许可的小依赖，以及对应边界验证。
 
-建议纳入仓库的快照基线为 fast_float v8.3.2、Ryu 上游提交 `59661c3` 的 `d2s` 依赖闭包；Ryu 的 C 源作为单独 C99 目标，主解释器和生成代码仍为 C++20。实现前核对快照完整 SHA、文件清单与 SHA-256，记录在 `third_party/manifest.json`，保留各自原许可和版权。配置构建不得联网自动拉取。当前只核对了上游 README/源码契约，fast_float 固定 tag 页面访问失败，未下载并核验该版本包；Ryu 固定提交来自可追溯引用，未完成本机编译，导入时必须复核所选快照具有下述契约。若不满足，修订具体依赖建议后再接入，不能悄悄放宽 D72。
+建议纳入仓库的快照基线为 fast_float v8.3.2、Ryu 上游提交 `59661c3` 的 `d2s` 依赖闭包；Ryu 的 C 源作为单独 C99 目标，主解释器和生成代码仍为 C++20。实现前核对快照完整 SHA、文件清单与 SHA-256，记录在 `third_party/manifest.json`，保留各自原许可和版权。配置构建不得联网自动拉取。设计批准时只核对了上游 README/源码契约，尚未导入和编译固定快照。M1 已将 fast_float v8.3.2 核验为完整提交 `42f254836ee416ffcf2f4e6576260003ac33d48c`，Ryu 核验为 `59661c3f883dfd39cef6dc8eaf2fcbaae53597e8`，保留原许可并记录归档/逐文件 SHA-256；离线配置核验和本机 C++20/C99 构建及数值边界测试通过，证据见 [测试报告](./测试报告.md)。若不满足，修订具体依赖建议后再接入，不能悄悄放宽 D72。
 
 MYB 自己先验证完整数字文法，源码模式不允许符号/首尾空白；转换模式只裁去 ASCII 9–13/32 空白，可带一个正负号，并额外接受十进制整数文本。`.5`、`1.`、`+.5`、十六进制、分隔下划线、NaN/Inf、尾随垃圾均拒绝。前导 `+` 在检查后去除，再传给库；负号保留。检查返回 ptr 恰为末尾，只接受 ec 成功且结果有限，或 ec 为 result_out_of_range 且结果确为正/负零；后者是规范允许的下溢。不能泛写“有限就成功”，也不能把库的全部范围错误都当作溢出。源码失败是前端错误 1，float 失败是运行错误 1，try_float 的受控内容/范围失败返回 null；资源故障仍为 3。[fast_float 上游契约](https://github.com/fastfloat/fast_float)
 

@@ -1,0 +1,206 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "three",
+      "script": "cases/three.myb",
+      "mode": "run",
+      "expect_exit": 0,
+      "expect_stdout_file": "expected/three.stdout",
+      "expect_stderr_file": "expected/empty.bin"
+    },
+    {
+      "id": "division-zero",
+      "script": "cases/division-zero.myb",
+      "mode": "run",
+      "expect_exit": 1,
+      "expect_stdout_file": "expected/division-zero.stdout",
+      "expect_stderr_regex": "$SCRIPT:\\d+:\\d+: runtime error \\[Arithmetic\\]: .*\\n"
+    },
+    {
+      "id": "syntax-error",
+      "script": "cases/syntax-error.myb",
+      "mode": "run",
+      "expect_exit": 1,
+      "expect_stdout_file": "expected/syntax-error.stdout",
+      "expect_stderr_regex": "$SCRIPT:\\d+:\\d+: frontend error \\[Syntax\\]: .*\\n"
+    },
+    {
+      "id": "later-syntax-blocks-output",
+      "script": "cases/later-syntax-blocks-output.myb",
+      "mode": "run",
+      "expect_exit": 1,
+      "expect_stdout_file": "expected/later-syntax-blocks-output.stdout",
+      "expect_stderr_regex": "$SCRIPT:\\d+:\\d+: frontend error \\[Syntax\\]: .*\\n"
+    },
+    {
+      "id": "arity-before-args",
+      "script": "cases/arity-before-args.myb",
+      "mode": "run",
+      "expect_exit": 1,
+      "expect_stdout_file": "expected/arity-before-args.stdout",
+      "expect_stderr_regex": "$SCRIPT:\\d+:\\d+: runtime error \\[Type\\]: .*\\n"
+    },
+    {
+      "id": "name-before-args",
+      "script": "cases/name-before-args.myb",
+      "mode": "run",
+      "expect_exit": 1,
+      "expect_stdout_file": "expected/name-before-args.stdout",
+      "expect_stderr_regex": "$SCRIPT:\\d+:\\d+: runtime error \\[Name\\]: .*\\n"
+    },
+    {
+      "id": "check-no-effects",
+      "script": "cases/check-no-effects.myb",
+      "mode": "check",
+      "expect_exit": 0,
+      "expect_stdout_file": "expected/check-no-effects.stdout",
+      "expect_stderr_file": "expected/empty.bin",
+      "stdin_file": "expected/invalid.stdin"
+    },
+    {
+      "id": "check-dynamic-errors",
+      "script": "cases/check-dynamic-errors.myb",
+      "mode": "check",
+      "expect_exit": 0,
+      "expect_stdout_file": "expected/check-dynamic-errors.stdout",
+      "expect_stderr_file": "expected/empty.bin"
+    },
+    {
+      "id": "unicode-and-nul",
+      "script": "cases/北邮 空格脚本",
+      "mode": "run",
+      "expect_exit": 0,
+      "expect_stdout_file": "expected/unicode-and-nul.stdout",
+      "expect_stderr_file": "expected/empty.bin"
+    },
+    {
+      "id": "mixed-and-float",
+      "script": "cases/mixed-and-float.myb",
+      "mode": "run",
+      "expect_exit": 0,
+      "expect_stdout_file": "expected/mixed-and-float.stdout",
+      "expect_stderr_file": "expected/empty.bin"
+    },
+    {
+      "id": "integer-boundaries",
+      "script": "cases/integer-boundaries.myb",
+      "mode": "run",
+      "expect_exit": 0,
+      "expect_stdout_file": "expected/integer-boundaries.stdout",
+      "expect_stderr_file": "expected/empty.bin"
+    },
+    {
+      "id": "positive-int-range",
+      "script": "cases/positive-int-range.myb",
+      "mode": "run",
+      "expect_exit": 1,
+      "expect_stdout_file": "expected/positive-int-range.stdout",
+      "expect_stderr_regex": "$SCRIPT:\\d+:\\d+: frontend error \\[Range\\]: .*\\n"
+    },
+    {
+      "id": "grouped-positive-min",
+      "script": "cases/grouped-positive-min.myb",
+      "mode": "run",
+      "expect_exit": 1,
+      "expect_stdout_file": "expected/grouped-positive-min.stdout",
+      "expect_stderr_regex": "$SCRIPT:\\d+:\\d+: frontend error \\[Range\\]: .*\\n"
+    },
+    {
+      "id": "negate-min-overflow",
+      "script": "cases/negate-min-overflow.myb",
+      "mode": "run",
+      "expect_exit": 1,
+      "expect_stdout_file": "expected/negate-min-overflow.stdout",
+      "expect_stderr_regex": "$SCRIPT:\\d+:\\d+: runtime error \\[Arithmetic\\]: .*\\n"
+    },
+    {
+      "id": "float-overflow",
+      "script": "cases/float-overflow.myb",
+      "mode": "run",
+      "expect_exit": 1,
+      "expect_stdout_file": "expected/float-overflow.stdout",
+      "expect_stderr_regex": "$SCRIPT:\\d+:\\d+: frontend error \\[Range\\]: .*\\n"
+    },
+    {
+      "id": "float-underflow",
+      "script": "cases/float-underflow.myb",
+      "mode": "run",
+      "expect_exit": 0,
+      "expect_stdout_file": "expected/float-underflow.stdout",
+      "expect_stderr_file": "expected/empty.bin"
+    },
+    {
+      "id": "strict-number-type",
+      "script": "cases/strict-number-type.myb",
+      "mode": "run",
+      "expect_exit": 1,
+      "expect_stdout_file": "expected/strict-number-type.stdout",
+      "expect_stderr_regex": "$SCRIPT:\\d+:\\d+: runtime error \\[Type\\]: .*\\n"
+    },
+    {
+      "id": "floor-and-modulo",
+      "script": "cases/floor-and-modulo.myb",
+      "mode": "run",
+      "expect_exit": 0,
+      "expect_stdout_file": "expected/floor-and-modulo.stdout",
+      "expect_stderr_file": "expected/empty.bin"
+    },
+    {
+      "id": "operator-precedence",
+      "script": "cases/operator-precedence.myb",
+      "mode": "run",
+      "expect_exit": 0,
+      "expect_stdout_file": "expected/operator-precedence.stdout",
+      "expect_stderr_file": "expected/empty.bin"
+    },
+    {
+      "id": "scalar-display",
+      "script": "cases/scalar-display.myb",
+      "mode": "run",
+      "expect_exit": 0,
+      "expect_stdout_file": "expected/scalar-display.stdout",
+      "expect_stderr_file": "expected/empty.bin"
+    },
+    {
+      "id": "source-encoding",
+      "script": "cases/source-encoding.myb",
+      "mode": "run",
+      "expect_exit": 1,
+      "expect_stdout_file": "expected/source-encoding.stdout",
+      "expect_stderr_regex": "$SCRIPT:\\d+:\\d+: frontend error \\[Encoding\\]: .*\\n"
+    },
+    {
+      "id": "source-bom-newlines",
+      "script": "cases/source-bom-newlines.myb",
+      "mode": "run",
+      "expect_exit": 0,
+      "expect_stdout_file": "expected/source-bom-newlines.stdout",
+      "expect_stderr_file": "expected/empty.bin"
+    },
+    {
+      "id": "source-internal-nul",
+      "script": "cases/source-internal-nul.myb",
+      "mode": "run",
+      "expect_exit": 1,
+      "expect_stdout_file": "expected/source-internal-nul.stdout",
+      "expect_stderr_regex": "$SCRIPT:\\d+:\\d+: frontend error \\[Syntax\\]: .*\\n"
+    },
+    {
+      "id": "unsupported-escape",
+      "script": "cases/unsupported-escape.myb",
+      "mode": "run",
+      "expect_exit": 1,
+      "expect_stdout_file": "expected/unsupported-escape.stdout",
+      "expect_stderr_regex": "$SCRIPT:\\d+:\\d+: frontend error \\[Syntax\\]: .*\\n"
+    },
+    {
+      "id": "ast-capacity",
+      "script": "cases/ast-capacity.myb",
+      "mode": "run",
+      "expect_exit": 3,
+      "expect_stdout_file": "expected/ast-capacity.stdout",
+      "expect_stderr_regex": "$SCRIPT:\\d+:\\d+: resource error \\[Capacity\\]: .*\\n"
+    }
+  ]
+}

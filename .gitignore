@@ -203,6 +203,15 @@ cython_debug/
 # Temporary file for partial code execution
 tempCodeRunnerFile.py
 
+# MYB native build products and generated Flex/Bison outputs
+/generated/
+*.o
+*.obj
+*.a
+*.exe
+*.dll
+CMakeUserPresets.json
+
 # Ruff stuff:
 .ruff_cache/
 

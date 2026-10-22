@@ -1,0 +1,206 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "three",
+      "script": "smoke/cases/three.myb",
+      "mode": "run",
+      "expect_exit": 0,
+      "expect_stdout_file": "smoke/expected/three.stdout",
+      "expect_stderr_file": "smoke/expected/empty.bin"
+    },
+    {
+      "id": "division-zero",
+      "script": "smoke/cases/division-zero.myb",
+      "mode": "run",
+      "expect_exit": 1,
+      "expect_stdout_file": "smoke/expected/division-zero.stdout",
+      "expect_stderr_regex": "$SCRIPT:\\d+:\\d+: runtime error \\[Arithmetic\\]: .*\\n"
+    },
+    {
+      "id": "syntax-error",
+      "script": "smoke/cases/syntax-error.myb",
+      "mode": "run",
+      "expect_exit": 1,
+      "expect_stdout_file": "smoke/expected/syntax-error.stdout",
+      "expect_stderr_regex": "$SCRIPT:\\d+:\\d+: frontend error \\[Syntax\\]: .*\\n"
+    },
+    {
+      "id": "later-syntax-blocks-output",
+      "script": "smoke/cases/later-syntax-blocks-output.myb",
+      "mode": "run",
+      "expect_exit": 1,
+      "expect_stdout_file": "smoke/expected/later-syntax-blocks-output.stdout",
+      "expect_stderr_regex": "$SCRIPT:\\d+:\\d+: frontend error \\[Syntax\\]: .*\\n"
+    },
+    {
+      "id": "arity-before-args",
+      "script": "smoke/cases/arity-before-args.myb",
+      "mode": "run",
+      "expect_exit": 1,
+      "expect_stdout_file": "smoke/expected/arity-before-args.stdout",
+      "expect_stderr_regex": "$SCRIPT:\\d+:\\d+: runtime error \\[Type\\]: .*\\n"
+    },
+    {
+      "id": "name-before-args",
+      "script": "smoke/cases/name-before-args.myb",
+      "mode": "run",
+      "expect_exit": 1,
+      "expect_stdout_file": "smoke/expected/name-before-args.stdout",
+      "expect_stderr_regex": "$SCRIPT:\\d+:\\d+: runtime error \\[Name\\]: .*\\n"
+    },
+    {
+      "id": "check-no-effects",
+      "script": "smoke/cases/check-no-effects.myb",
+      "mode": "check",
+      "expect_exit": 0,
+      "expect_stdout_file": "smoke/expected/check-no-effects.stdout",
+      "expect_stderr_file": "smoke/expected/empty.bin",
+      "stdin_file": "smoke/expected/invalid.stdin"
+    },
+    {
+      "id": "check-dynamic-errors",
+      "script": "smoke/cases/check-dynamic-errors.myb",
+      "mode": "check",
+      "expect_exit": 0,
+      "expect_stdout_file": "smoke/expected/check-dynamic-errors.stdout",
+      "expect_stderr_file": "smoke/expected/empty.bin"
+    },
+    {
+      "id": "unicode-and-nul",
+      "script": "smoke/cases/北邮 空格脚本",
+      "mode": "run",
+      "expect_exit": 0,
+      "expect_stdout_file": "smoke/expected/unicode-and-nul.stdout",
+      "expect_stderr_file": "smoke/expected/empty.bin"
+    },
+    {
+      "id": "mixed-and-float",
+      "script": "smoke/cases/mixed-and-float.myb",
+      "mode": "run",
+      "expect_exit": 0,
+      "expect_stdout_file": "smoke/expected/mixed-and-float.stdout",
+      "expect_stderr_file": "smoke/expected/empty.bin"
+    },
+    {
+      "id": "integer-boundaries",
+      "script": "smoke/cases/integer-boundaries.myb",
+      "mode": "run",
+      "expect_exit": 0,
+      "expect_stdout_file": "smoke/expected/integer-boundaries.stdout",
+      "expect_stderr_file": "smoke/expected/empty.bin"
+    },
+    {
+      "id": "positive-int-range",
+      "script": "smoke/cases/positive-int-range.myb",
+      "mode": "run",
+      "expect_exit": 1,
+      "expect_stdout_file": "smoke/expected/positive-int-range.stdout",
+      "expect_stderr_regex": "$SCRIPT:\\d+:\\d+: frontend error \\[Range\\]: .*\\n"
+    },
+    {
+      "id": "grouped-positive-min",
+      "script": "smoke/cases/grouped-positive-min.myb",
+      "mode": "run",
+      "expect_exit": 1,
+      "expect_stdout_file": "smoke/expected/grouped-positive-min.stdout",
+      "expect_stderr_regex": "$SCRIPT:\\d+:\\d+: frontend error \\[Range\\]: .*\\n"
+    },
+    {
+      "id": "negate-min-overflow",
+      "script": "smoke/cases/negate-min-overflow.myb",
+      "mode": "run",
+      "expect_exit": 1,
+      "expect_stdout_file": "smoke/expected/negate-min-overflow.stdout",
+      "expect_stderr_regex": "$SCRIPT:\\d+:\\d+: runtime error \\[Arithmetic\\]: .*\\n"
+    },
+    {
+      "id": "float-overflow",
+      "script": "smoke/cases/float-overflow.myb",
+      "mode": "run",
+      "expect_exit": 1,
+      "expect_stdout_file": "smoke/expected/float-overflow.stdout",
+      "expect_stderr_regex": "$SCRIPT:\\d+:\\d+: frontend error \\[Range\\]: .*\\n"
+    },
+    {
+      "id": "float-underflow",
+      "script": "smoke/cases/float-underflow.myb",
+      "mode": "run",
+      "expect_exit": 0,
+      "expect_stdout_file": "smoke/expected/float-underflow.stdout",
+      "expect_stderr_file": "smoke/expected/empty.bin"
+    },
+    {
+      "id": "strict-number-type",
+      "script": "smoke/cases/strict-number-type.myb",
+      "mode": "run",
+      "expect_exit": 1,
+      "expect_stdout_file": "smoke/expected/strict-number-type.stdout",
+      "expect_stderr_regex": "$SCRIPT:\\d+:\\d+: runtime error \\[Type\\]: .*\\n"
+    },
+    {
+      "id": "floor-and-modulo",
+      "script": "smoke/cases/floor-and-modulo.myb",
+      "mode": "run",
+      "expect_exit": 0,
+      "expect_stdout_file": "smoke/expected/floor-and-modulo.stdout",
+      "expect_stderr_file": "smoke/expected/empty.bin"
+    },
+    {
+      "id": "operator-precedence",
+      "script": "smoke/cases/operator-precedence.myb",
+      "mode": "run",
+      "expect_exit": 0,
+      "expect_stdout_file": "smoke/expected/operator-precedence.stdout",
+      "expect_stderr_file": "smoke/expected/empty.bin"
+    },
+    {
+      "id": "scalar-display",
+      "script": "smoke/cases/scalar-display.myb",
+      "mode": "run",
+      "expect_exit": 0,
+      "expect_stdout_file": "smoke/expected/scalar-display.stdout",
+      "expect_stderr_file": "smoke/expected/empty.bin"
+    },
+    {
+      "id": "source-encoding",
+      "script": "smoke/cases/source-encoding.myb",
+      "mode": "run",
+      "expect_exit": 1,
+      "expect_stdout_file": "smoke/expected/source-encoding.stdout",
+      "expect_stderr_regex": "$SCRIPT:\\d+:\\d+: frontend error \\[Encoding\\]: .*\\n"
+    },
+    {
+      "id": "source-bom-newlines",
+      "script": "smoke/cases/source-bom-newlines.myb",
+      "mode": "run",
+      "expect_exit": 0,
+      "expect_stdout_file": "smoke/expected/source-bom-newlines.stdout",
+      "expect_stderr_file": "smoke/expected/empty.bin"
+    },
+    {
+      "id": "source-internal-nul",
+      "script": "smoke/cases/source-internal-nul.myb",
+      "mode": "run",
+      "expect_exit": 1,
+      "expect_stdout_file": "smoke/expected/source-internal-nul.stdout",
+      "expect_stderr_regex": "$SCRIPT:\\d+:\\d+: frontend error \\[Syntax\\]: .*\\n"
+    },
+    {
+      "id": "unsupported-escape",
+      "script": "smoke/cases/unsupported-escape.myb",
+      "mode": "run",
+      "expect_exit": 1,
+      "expect_stdout_file": "smoke/expected/unsupported-escape.stdout",
+      "expect_stderr_regex": "$SCRIPT:\\d+:\\d+: frontend error \\[Syntax\\]: .*\\n"
+    },
+    {
+      "id": "ast-capacity",
+      "script": "smoke/cases/ast-capacity.myb",
+      "mode": "run",
+      "expect_exit": 3,
+      "expect_stdout_file": "smoke/expected/ast-capacity.stdout",
+      "expect_stderr_regex": "$SCRIPT:\\d+:\\d+: resource error \\[Capacity\\]: .*\\n"
+    }
+  ]
+}
