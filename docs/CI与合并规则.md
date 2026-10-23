@@ -44,6 +44,8 @@ CI 脚本要求 PowerShell 7+，与 GitHub 的 `shell: pwsh` 一致；通过 `#R
 
 ## GitHub 运行验收
 
+首轮 [运行 39875495711](https://github.com/Kyxs2707/202609_BUPT_programming_practice/actions/runs/39875495711) 实际检出 CLI 自测路径表示差异：runner 的 MinGW Python 输出 `/` 路径，Windows 宿主诊断输出 `\`。已只修正测试的 native 路径预期，保持行列、错误类别、退出值与源码未被修改的断言；本机 Debug/Release 各 7 项 CLI 复验通过，远端继续复验。该次失败的两个 job 仍成功上传日志。
+
 待补充正常 → 错误 `three.stdout` → 恢复三个提交各自的两项 job 状态、运行链接、提交 SHA 与日志入口。远端 dev 仍停在早期文档提交，验证分支需要携带本地已有、已验收的 M1 基线；本次不改动解释器功能。
 
 ## 远端门禁现状与恢复步骤
@@ -54,7 +56,7 @@ CI 脚本要求 PowerShell 7+，与 GitHub 的 `shell: pwsh` 一致；通过 `#R
 Upgrade to GitHub Pro or make this repository public to enable this feature.
 ```
 
-因此不能核验、增补或验收强制保护。这是仓库套餐能力限制，不是缺少管理权限；没有修改仓库可见性、账户付费方案或现有远端保护。自动运行绿色结果不能证明失败会被 GitHub 禁止合并。
+用户已明确选择保留私有仓库，先完成自动 CI，将门禁标为待完成。因此本轮不继续增补或验收强制保护。这是仓库套餐能力限制，不是缺少管理权限；没有修改仓库可见性、账户付费方案或现有远端保护。自动运行绿色结果不能证明失败会被 GitHub 禁止合并。
 
 账户取得支持私有仓库保护的能力后，按以下步骤继续 CI-02：
 

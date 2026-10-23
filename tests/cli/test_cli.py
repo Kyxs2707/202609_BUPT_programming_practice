@@ -64,7 +64,10 @@ class CliTests(unittest.TestCase):
                                     stdin=subprocess.DEVNULL, stdout=readonly,
                                     stderr=subprocess.PIPE, timeout=5)
         self.assertEqual(result.returncode, 1)
-        self.assertIn((str(script) + ":2:1: runtime error [IO]:").encode("utf-8"), result.stderr)
+        # The Windows host reports native paths, including when MinGW Python's
+        # pathlib uses forward slashes for the same absolute file name.
+        native_path = str(script).replace("/", "\\")
+        self.assertIn((native_path + ":2:1: runtime error [IO]:").encode("utf-8"), result.stderr)
         self.assertEqual(script.read_bytes(), b"\nprint(3);")
 
     def test_host_command_output_failure_is_exit_three(self):
