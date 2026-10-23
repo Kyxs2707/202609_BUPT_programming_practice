@@ -15,11 +15,11 @@ C++20、UCRT64 GCC、Flex/Bison、CMake/Ninja、Python 3.10+、PowerShell 7+。�
 | 职责 | 文件 |
 |---|---|
 | 文档与用词 | [文档规则](docs/rules/文档构建原则.md)、[禁用词表](docs/forbidden_terms.yaml) |
-| 功能与语义 | [原始需求](docs/原始需求文档.md)、[语言规范](docs/MYB语言规范.md) |
-| 解释器实现 | [解释器设计](docs/MYB解释器设计.md) |
-| 任务与进度 | [实施计划](docs/MYB解释器实施计划.md)、[项目步骤](docs/superpowers/plans/2026-10-11-myb-implementation.md) |
-| 构建与验收 | [构建文档](docs/构建与测试.md)、[测试报告](docs/测试报告.md)、[CI 规则](docs/CI与合并规则.md) |
-| 决定追溯 | [语言讨论](docs/MYB语言设计讨论记录.md)、[解释器讨论](docs/MYB解释器设计讨论记录.md) |
+| 功能与语义 | [原始需求](docs/requirements/原始需求文档.md)、[语言规范](docs/specs/MYB语言规范.md) |
+| 解释器实现 | [解释器设计](docs/specs/MYB解释器设计.md) |
+| 任务与进度 | [实施计划](docs/plans/MYB解释器实施计划.md)、[项目步骤](docs/superpowers/plans/2026-10-11-myb-implementation.md) |
+| 构建与验收 | [构建文档](docs/guides/构建与测试.md)、[测试报告](docs/reports/测试报告_v0.1.md)、[CI 规则](docs/rules/CI与合并规则.md) |
+| 决定追溯 | [语言讨论](docs/specs/discussions/MYB语言设计讨论记录.md)、[解释器讨论](docs/specs/discussions/MYB解释器设计讨论记录.md) |
 
 ## 执行顺序
 

@@ -10,7 +10,7 @@ BUPT 2025–2026 学年程序设计实践：小型通用脚本语言与 C++20 �
 & .\build\debug\myb.exe --check .\examples\hello.myb
 ```
 
-首次使用见 [构建与测试](docs/构建与测试.md)。语言规则见 [语言规范](docs/MYB语言规范.md)，实现安排见 [解释器设计](docs/MYB解释器设计.md) 和 [实施计划](docs/MYB解释器实施计划.md)，验收范围见 [测试报告](docs/测试报告.md)。
+首次使用见 [构建与测试](docs/guides/构建与测试.md)。语言规则见 [语言规范](docs/specs/MYB语言规范.md)，实现安排见 [解释器设计](docs/specs/MYB解释器设计.md) 和 [实施计划](docs/plans/MYB解释器实施计划.md)，验收范围见 [测试报告](docs/reports/测试报告_v0.1.md)。
 
 默认黑盒入口：
 
@@ -27,4 +27,4 @@ pwsh -File ./tools/ci.ps1 -Configuration Debug -Msys2Root D:/msys64
 pwsh -File ./tools/ci.ps1 -Configuration Release -Msys2Root D:/msys64
 ```
 
-脚本需要 PowerShell 7+（`pwsh`）；MSYS2 安装根按实际环境传入。自动运行和远端门禁的独立验收状态见 [CI 与合并规则](docs/CI与合并规则.md)。
+脚本需要 PowerShell 7+（`pwsh`）；MSYS2 安装根按实际环境传入。自动运行和远端门禁的独立验收状态见 [CI 与合并规则](docs/rules/CI与合并规则.md)。
