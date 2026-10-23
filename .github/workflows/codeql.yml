@@ -1,0 +1,88 @@
+name: CodeQL Advanced
+
+on:
+  push:
+    branches: [dev, main]
+  pull_request:
+    branches: [dev, main]
+  workflow_dispatch:
+  schedule:
+    - cron: '35 10 * * 2'
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+
+    permissions:
+      contents: read
+      actions: read
+      security-events: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - language: actions
+            os: ubuntu-latest
+            build-mode: none
+
+          - language: c-cpp
+            os: windows-2025
+            build-mode: manual
+
+          - language: python
+            os: ubuntu-latest
+            build-mode: none
+
+    steps:
+      - name: 检出源码
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: 安装 C/C++ 构建工具
+        if: ${{ matrix.language == 'c-cpp' }}
+        id: msys2
+        uses: msys2/setup-msys2@ec48f7c5447b3140e2b088413ae3a55687bccb6e # v2.33.0
+        with:
+          msystem: UCRT64
+          update: true
+          install: >-
+            mingw-w64-ucrt-x86_64-gcc
+            mingw-w64-ucrt-x86_64-cmake
+            mingw-w64-ucrt-x86_64-ninja
+            mingw-w64-ucrt-x86_64-python
+            flex
+            bison
+
+      - name: 初始化 CodeQL
+        uses: github/codeql-action/init@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
+
+      - name: 构建并验证 C/C++
+        if: ${{ matrix.language == 'c-cpp' }}
+        shell: pwsh
+        run: >-
+          ./tools/ci.ps1
+          -Configuration Release
+          -Msys2Root '${{ steps.msys2.outputs.msys2-location }}'
+
+      - name: 分析并上传 CodeQL 结果
+        uses: github/codeql-action/analyze@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4
+        with:
+          category: '/language:${{ matrix.language }}'
+
+      - name: 上传 C/C++ 构建日志
+        if: ${{ always() && matrix.language == 'c-cpp' }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: codeql-cpp-build-logs
+          path: |
+            build/ci-logs/release/
+            build/release/CMakeFiles/CMakeConfigureLog.yaml
+          if-no-files-found: ignore
