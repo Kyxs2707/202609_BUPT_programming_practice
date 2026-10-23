@@ -2,7 +2,7 @@
 
 日期：2026-10-23。范围为 [实施计划](./MYB解释器实施计划.md) 的 CI-01/CI-02，M2–M4 未启动。
 
-CI 自动运行与 GitHub 强制合并门禁分别验收。当前本地 Debug/Release 脚本已通过，远端运行待验收；**CI-02 受 GitHub 私有仓库套餐能力限制，尚未生效，整个 CI 阶段仍未完成**。
+CI 自动运行与 GitHub 强制合并门禁分别验收。本地 Debug/Release 脚本及远端正常→错误预期→恢复三阶段已验收；仅文档 PR 触发验证待完成。**CI-02 受 GitHub 私有仓库套餐能力限制，尚未生效，整个 CI 阶段仍未完成**。
 
 ## 自动构建与回归
 
@@ -29,7 +29,7 @@ pwsh -File ./tools/ci.ps1 -Configuration Release -Msys2Root D:/msys64
 
 CI 脚本要求 PowerShell 7+，与 GitHub 的 `shell: pwsh` 一致；通过 `#Requires` 在旧 PowerShell 执行前明确报错，避免 5.1 把成功 unittest 的 stderr 报告误当失败。本机原生 CMake/Ninja 使用既有 `build/hosttools`，通过 PATH 提供；MSYS2 根参数只是本机示例。每次脚本先清理本配置生成目录，再配置/构建；日志见 `build/ci-logs/<debug|release>/ci.log`。各原生命令立即检查退出码，首个失败终止流程并原样返回；包装器用同一 unittest discover 得到非空 suite 后实际执行，不写死测试数量。
 
-本次实际工具：GCC 15.2.0、Flex 2.6.4、Bison 3.8.2、CMake 4.1.0、Ninja 1.13.0、UCRT64 Python 3.12.12。
+本机实际工具：GCC 15.2.0、Flex 2.6.4、Bison 3.8.2、CMake 4.1.0、Ninja 1.13.0、UCRT64 Python 3.12.12。远端 windows-2025 实测 GCC 16.2.0、Python 3.14.8、CMake 4.4.4、Ninja 1.13.2、Flex 2.6.4、Bison 3.8.2；以下同组测试也在远端通过，不将本机版本冒充 runner 固定版本。
 
 | 验证 | Debug | Release |
 |---|---|---|
@@ -44,9 +44,19 @@ CI 脚本要求 PowerShell 7+，与 GitHub 的 `shell: pwsh` 一致；通过 `#R
 
 ## GitHub 运行验收
 
-首轮 [运行 39875495711](https://github.com/Kyxs2707/202609_BUPT_programming_practice/actions/runs/39875495711) 实际检出 CLI 自测路径表示差异：runner 的 MinGW Python 输出 `/` 路径，Windows 宿主诊断输出 `\`。已只修正测试的 native 路径预期，保持行列、错误类别、退出值与源码未被修改的断言；本机 Debug/Release 各 7 项 CLI 复验通过，远端继续复验。该次失败的两个 job 仍成功上传日志。同样的路径差异会影响黑盒 `$SCRIPT`；本机正斜杠路径探针实际复现 14/25 例路径匹配失败后，驱动改为在 Windows 上向解释器传入原生路径，并对相同参数转义生成占位符。未归一化实际输出或放宽诊断断言；探针、driver 自测与 Release 黑盒全部通过。补充持久回归 `test_forward_slash_pathlib_matches_windows_native_diagnostic`：对修复前驱动实际失败，对当前驱动通过；诊断子进程 fixture 始终按 Windows 原生路径报告，独立于 Python 的路径分隔符偏好。
+首轮 [运行 39875495711](https://github.com/Kyxs2707/202609_BUPT_programming_practice/actions/runs/39875495711) 实际检出 CLI 自测路径表示差异：runner 的 MinGW Python 输出 `/` 路径，Windows 宿主诊断输出 `\`。已只修正测试的 native 路径预期，保持行列、错误类别、退出值与源码未被修改的断言；本机 Debug/Release 各 7 项 CLI 复验通过，远端最终复验通过。该次失败的两个 job 仍成功上传日志。同样的路径差异会影响黑盒 `$SCRIPT`；本机正斜杠路径探针实际复现 14/25 例路径匹配失败后，驱动改为在 Windows 上向解释器传入原生路径，并对相同参数转义生成占位符。未归一化实际输出或放宽诊断断言；探针、driver 自测与 Release 黑盒全部通过。补充持久回归 `test_forward_slash_pathlib_matches_windows_native_diagnostic`：对修复前驱动实际失败，对当前驱动通过；诊断子进程 fixture 始终按 Windows 原生路径报告，独立于 Python 的路径分隔符偏好。
 
-待补充正常 → 错误 `three.stdout` → 恢复三个提交各自的两项 job 状态、运行链接、提交 SHA 与日志入口。远端 dev 仍停在早期文档提交，验证分支需要携带本地已有、已验收的 M1 基线；本次不改动解释器功能。
+代码验证 PR 为 [PR #1 → dev](https://github.com/Kyxs2707/202609_BUPT_programming_practice/pull/1)，携带远端尚未包含的已验收 M1 前置提交，本次不增加语言功能。
+
+| 阶段 | 提交 SHA | windows-debug | windows-release | 运行及日志 |
+|---|---|---|---|---|
+| 正常 | `0070a4c76329d1e28e34203a6ddd7703bb335ebd` | success | success | [运行 39876394997](https://github.com/Kyxs2707/202609_BUPT_programming_practice/actions/runs/39876394997) |
+| 错误预期 | `20262fe442a5f210c9c46bc91bab8723f9b9b1b6` | failure | failure | [运行 39876719870](https://github.com/Kyxs2707/202609_BUPT_programming_practice/actions/runs/39876719870) |
+| 恢复 | `9787e6fb2b54604d4e52f73442ddbd75292fec46` | success | success | [运行 39877019675](https://github.com/Kyxs2707/202609_BUPT_programming_practice/actions/runs/39877019675) |
+
+三个阶段均实际生成 `windows-debug-logs` 与 `windows-release-logs`，可在各运行页 Artifacts 下载；完整 job 日志也在运行页。错误预期阶段仅把 `three.stdout` 从 `3\n` 改为 `4\n`，两 job 均报告 `24 passed, 1 failed, 25 total`、stdout 预期 4/实际 3，并由脚本保留退出 1。恢复提交的完整源码树与正常提交相同（`git diff 0070a4c 9787e6f --exit-code` 为 0），最终文件仍为原始 `3\n` 字节。实际检查名为 `windows-debug`、`windows-release`，来源 GitHub Actions App ID `15368`。
+
+仅文档 PR 须在代码合入 dev 后独立建立，累计 diff 必须只有文档；不能将 PR #1 内的文档提交冒充仅文档 PR。目前等待用户对更新共享 dev 的合并选择，不修改 main。
 
 ## 远端门禁现状与恢复步骤
 
