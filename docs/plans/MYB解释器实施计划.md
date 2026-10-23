@@ -10,13 +10,13 @@
 
 **Spec:** [MYB 解释器设计](../specs/MYB解释器设计.md)；语言行为以 [MYB 语言规范](../specs/MYB语言规范.md) v0.2（含 2026-10-22 D63 澄清）为准；完整课程交付顺序见 [项目实施步骤](../superpowers/plans/2026-10-11-myb-implementation.md)。
 
-状态：用户于 2026-10-22 明确要求“好，你先完成M1吧”，已授权任务 01–06。**M1 已于 2026-10-23 完成实现与验收；M2–M4 未启动。** 2026-10-23 按用户要求在 M1 与 M2 之间新增 CI-01/CI-02 两项工程任务，用户已授权实施；CI-01 的本地脚本、远端两 job 正常→失败→恢复和独立仅文档 PR 触发均已验收；用户随后将仓库改为 public 并授权完成 CI-02，强制门禁已配置并完成失败/恢复验收；整个 CI 工程阶段完成。 独立构建、源码前端与堆模块并行实施，由根代理集成并安排一次独立整体审查。实测命令、范围与调整见 [构建与测试](../guides/构建与测试.md) 和 [测试报告](../reports/测试报告_v0.1.md)。
+状态：用户于 2026-10-22 明确要求“好，你先完成M1吧”，已授权任务 01–06。**M1 已于 2026-10-23 完成实现与验收；M2–M4 未启动。** 2026-10-23 按用户要求在 M1 与 M2 之间新增 CI-01/CI-02 两项工程任务，用户已授权实施；CI-01 的本地脚本、远端两 job 正常→失败→恢复和独立仅文档 PR 触发均已验收；用户随后将仓库改为 public 并授权完成 CI-02，强制合并条件已配置并完成失败/恢复验收；整个 CI 工程阶段完成。 独立构建、源码前端与堆模块并行实施，由根代理集成并安排一次独立整体审查。实测命令、范围与调整见 [构建与测试](../guides/构建与测试.md) 和 [测试报告](../reports/测试报告_v0.1.md)。
 
 ## Global Constraints（全局约束）
 
 - 所有改动位于 dev 或从 dev 创建的派生分支；开始执行时再建立隔离分支/工作区，默认分支名为 `codex/myb-interpreter`；main 只能 PR 合并。
 - Windows 首版；核心与平台分离。核心/生成代码为 C++20，Ryu 独立 C99；不更换已确认的工具链。
-- 固定快照先核验完整 SHA、SHA-256、文件清单、许可与契约；configure 不联网下载、不安装工具。未核实的固定快照不能悄悄改成 master。
+- 固定版本源码先核验完整提交号、逐文件 SHA-256、文件清单、许可与契约；configure 不联网下载、不安装工具。版本未核实时保留待核验状态，不改用 master。
 - 用户直接执行源文件；必须完成全文件解析、结构检查、全部字节码生成/核验后才运行。未声明、未初始化、动态类型、调用数量和构造字段集合等保持既定运行时检查时序。
 - 变量/参数动态改绑，数组混合类型；对象 Value 复制共享，普通切片浅拷贝，deep_copy 保留图中共享/循环；字段按声明类型/可空规则检查。
 - Flex reentrant C 后端按 C++20 编译，Bison `lalr1.cc`＋variant＋完整 symbol；只读 Visitor、unique_ptr 树形所有权；AST 高度最多 256，超限受控资源错误 3。
@@ -42,11 +42,11 @@
 
 所有下列路径相对仓库根；任务 01–06 的 M1 文件已实现，其余文件按所属任务逐步建立。每任务列出的测试源需加入任务 01 的内部目标，blackbox 分组同时滚动聚合进默认 manifest：直接汇总cases并按默认manifest目录换算fixture路径，不增加include/import清单语法。中间版本只验收已实现子集，不把未实现分支的临时行为当作最终 MYB 规则。
 
-每项红测试附最小代码锚点和精确预期；片段中的first、span、ops、unit等属于该测试的局部夹具，按本任务接口完成构造，不新增产品辅助API。中文C++源按UTF-8编译，测试期望按显式字节核对，不能依赖编辑器本机编码。
+每项红测试附最小代码锚点和精确预期；片段中的first、span、ops、unit等是该测试所需的最小测试数据或测试辅助对象，按本任务接口完成构造，不新增产品辅助API。中文C++源按UTF-8编译，测试期望按显式字节核对，不能依赖编辑器本机编码。
 
 | 文件/组 | 单一职责与初次落地任务 |
 |---|---|
-| CMakeLists.txt、cmake/FindMybTools.cmake、third_party/manifest.json | 工具发现、固定快照与目标/生成依赖；01/05 |
+| CMakeLists.txt、cmake/FindMybTools.cmake、third_party/manifest.json | 工具发现、固定版本源码与目标/生成依赖；01/05 |
 | src/source/span.hpp、utf8.hpp/.cpp、source.hpp/.cpp | 编码、原字节与位置；02 |
 | src/diagnostic/failure.hpp/.cpp、diagnostic.hpp/.cpp | 无分配首错、异常分类；02；完整报告17 |
 | src/platform/utf8_sink.hpp、host_io.hpp、windows_io.cpp | 纯字节/文本/路径 I/O；02；完整读写16 |
@@ -104,11 +104,11 @@ python tools/run_blackbox.py --interpreter build/debug/myb.exe --manifest tests/
 
 ### 任务 01：可复现工具链、依赖与测试入口
 
-**Files:** Create `CMakeLists.txt`、`cmake/FindMybTools.cmake`、`.gitignore`、`third_party/manifest.json`、`src/runtime/toolchain_contract.cpp`、`tests/internal/test_support.hpp`、`tests/internal/main.cpp`、`tests/internal/test_hooks.hpp`、`tests/internal/test_hooks.cpp`、`tests/internal/toolchain_cases.cpp`、`tools/run_blackbox.py`、`tests/driver/test_run_blackbox.py`、`tests/driver/child_fixture.py`、`docs/构建与测试.md`；导入已核验数值快照及原许可。
+**Files:** Create `CMakeLists.txt`、`cmake/FindMybTools.cmake`、`.gitignore`、`third_party/manifest.json`、`src/runtime/toolchain_contract.cpp`、`tests/internal/test_support.hpp`、`tests/internal/main.cpp`、`tests/internal/test_hooks.hpp`、`tests/internal/test_hooks.cpp`、`tests/internal/toolchain_cases.cpp`、`tools/run_blackbox.py`、`tests/driver/test_run_blackbox.py`、`tests/driver/child_fixture.py`、`docs/构建与测试.md`；导入已核验的固定版本数值依赖源码及原许可。
 
 **Interfaces:** Produces myb_core、myb_decimal_ryu、可选 myb_internal_tests 目标及上述测试入口；驱动 CLI/manifest 严格采用设计格式，返回 0 全通过/1 失败或超时/2 参数或 manifest 错误。此时尚无 myb 执行目标，不伪造源文件检查成功。
 
-- [x] **1. 核验未来执行环境。** 读取 GCC/Flex/Bison/CMake/Ninja/Python 版本，定位或补齐缺少的原生工具；核验 fast_float v8.3.2 和 Ryu 59661c3 的完整 SHA/文件哈希/许可，并在 manifest 记录。固定快照无法满足契约时记录证据、修订对应依赖条目，不放宽 D72。
+- [x] **1. 核验未来执行环境。** 读取 GCC/Flex/Bison/CMake/Ninja/Python 版本，定位或补齐缺少的原生工具；核验 fast_float v8.3.2 和 Ryu 59661c3 的完整提交号、逐文件 SHA-256 和许可，并在 manifest 记录。固定版本源码无法满足契约时记录证据、修订对应依赖条目，不放宽 D72。
 - [x] **2. 写红测试。** toolchain case 要求 `__cplusplus==202002L`、double 为 binary64、span 可用；原始依赖把 `1.25` 解析为 1.25、Ryu 输出可提取同值。Python unittest 用独立 child_fixture 固定输出 `b"a\r\nb\n"`、stderr 和退出 7，证明正确预期通过、错误预期/超时失败、下一例仍运行、`../` 副作用路径被拒绝。
 
 ```cpp
@@ -148,7 +148,7 @@ REQUIRE(sources.locate(id, 17).line == 4);
 
 **Files:** Create `src/runtime/decimal_codec.hpp`、`src/runtime/decimal_codec.cpp`、`tests/internal/decimal_cases.cpp`；Modify CMake 源清单。
 
-**Interfaces:** Consumes 01 固定快照、02 宿主故障；Produces统一 NumericParseResult/ParseMode、DecimalCodec 三方法。方法只处理标量/宿主文本，不创建受管对象，不把正常 Content/Range 失败登记为首错。
+**Interfaces:** Consumes 01 固定版本源码、02 宿主故障；Produces统一 NumericParseResult/ParseMode、DecimalCodec 三方法。方法只处理标量/宿主文本，不创建受管对象，不把正常 Content/Range 失败登记为首错。
 
 - [x] **1. 写红测试。** decimal_codec 要求源码 `.5/1./1e/NaN` Content，转换 `" +01e2 "` 为100.0、`"-1e-9999"` 为 signbit=true 的0、`"1e9999"` Range；int `"-9223372036854775808"` 为MIN、正幅值2^63为Range。format 精确断言 `1.0`、`1000.0`、`1e+16`、`0.0001`、`1e-5`、`-0.0`。
 
@@ -227,7 +227,7 @@ print(1 + 2);
 
 ## CI：M1 后、M2 前的自动构建与合并检查
 
-2026-10-23 用户要求将 CI 加入计划。新增 CI-01、CI-02 两项工程任务，保持原任务 01–18 编号不变；合计 18 项解释器任务＋2 项 CI 任务。本节已获用户授权实施，CI-01 本地与远端红绿回归、普通代码/独立仅文档 PR 触发及 dev push 均已验收；用户随后将仓库改为 public 并完成 CI-02：远端规则已生效，失败/恢复门禁验证通过；整个 CI 阶段完成。证据见 [CI 与合并规则](../rules/CI与合并规则.md)。CI-01 自动执行构建/测试，CI-02 负责平台强制合并条件，两者分别验收。
+2026-10-23 用户要求将 CI 加入计划。新增 CI-01、CI-02 两项工程任务，保持原任务 01–18 编号不变；合计 18 项解释器任务＋2 项 CI 任务。本节已获用户授权实施，CI-01 本地与远端红绿回归、普通代码/独立仅文档 PR 触发及 dev push 均已验收；用户随后将仓库改为 public 并完成 CI-02：远端规则已生效，失败时阻止合并、恢复后满足必需状态检查条件的验证通过；整个 CI 阶段完成。证据见 [CI 与合并规则](../rules/CI与合并规则.md)。CI-01 自动执行构建/测试，CI-02 负责平台强制合并条件，两者分别验收。
 
 ### 任务 CI-01：GitHub Actions Windows 构建与自动回归
 
@@ -237,7 +237,7 @@ print(1 + 2);
 
 **Interfaces:** 工作流名 `MYB CI`，两个固定 job ID 与显示名均为 `windows-debug`、`windows-release`；不用动态矩阵后缀改变必需检查名。触发 `pull_request`（目标 `dev`、`main`）、`push`（仅 `dev`）和 `workflow_dispatch`；派生分支通过面向 dev/main 的 PR 验证，不因分支前缀遗漏检查。首版不设置 paths/paths-ignore、跳过文档变更或条件跳过整个必需 job；不启用自动合并、发布、部署或 Linux 矩阵。
 
-采用 GitHub 托管 `windows-2025` runner，通过 `msys2/setup-msys2` 配置 `UCRT64`，每 job 设置 `timeout-minutes: 30`。安装 `mingw-w64-ucrt-x86_64-gcc`、`mingw-w64-ucrt-x86_64-cmake`、`mingw-w64-ucrt-x86_64-ninja`、`mingw-w64-ucrt-x86_64-python` 以及 MSYS 的 `flex`、`bison`；记录实际版本，满足现有 CMake/语言基线。runner 标签固定并不固定其镜像或滚动软件包版本，日志须保留实际环境。checkout、MSYS2 setup、日志上传 action 在实施时核验并固定完整提交 SHA，登记来源版本；首版不缓存 build 或生成物。Windows runner 的用途与 MSYS2 UCRT64 接口见 [runner 官方清单](https://github.com/actions/runner-images)、[MSYS2 CI 文档](https://www.msys2.org/docs/ci/)和 [setup-msys2](https://github.com/msys2/setup-msys2)。
+采用 GitHub 托管 `windows-2025` runner，通过 `msys2/setup-msys2` 配置 `UCRT64`，每 job 设置 `timeout-minutes: 30`。安装 `mingw-w64-ucrt-x86_64-gcc`、`mingw-w64-ucrt-x86_64-cmake`、`mingw-w64-ucrt-x86_64-ninja`、`mingw-w64-ucrt-x86_64-python` 以及 MSYS 的 `flex`、`bison`；记录实际版本，满足现有 CMake/语言版本要求。runner 标签固定并不固定其镜像或滚动软件包版本，日志须保留实际环境。checkout、MSYS2 setup、日志上传 action 在实施时核验并固定完整提交 SHA，登记来源版本；首版不缓存 build 或生成物。Windows runner 的用途与 MSYS2 UCRT64 接口见 [runner 官方清单](https://github.com/actions/runner-images)、[MSYS2 CI 文档](https://www.msys2.org/docs/ci/)和 [setup-msys2](https://github.com/msys2/setup-msys2)。
 
 `tools/ci.ps1 -Configuration <Debug|Release> -Msys2Root <实际安装根目录>` 从脚本位置确定项目根，解析原生 CMake/Ninja、UCRT64 gcc/g++/Python 和 usr/bin 下 Flex/Bison；为整个构建/测试进程设置以 UCRT64 bin 优先、usr/bin 随后的 PATH，使运行库和生成器子工具可发现，不硬编码本机 D:/msys64。配置时显式传入同一 Python 的 `Python3_EXECUTABLE`。脚本成功退出 0，工具缺失、配置/构建/测试失败、零用例或超时均退出非零，且保留首个失败退出码；PowerShell 每条原生命令后立即检查 `$LASTEXITCODE`，不能只依赖 ErrorActionPreference，也不能让后续成功覆盖前次失败。
 
@@ -246,7 +246,7 @@ print(1 + 2);
 | windows-debug | build/debug，Debug，MYB_BUILD_INTERNAL_TESTS=ON | 全内部测试、driver unittest、指向 Debug 的 CLI unittest、默认 MYB 黑盒 |
 | windows-release | build/release，Release，MYB_BUILD_INTERNAL_TESTS=OFF | 指向 Release 的 CLI unittest、默认 MYB 黑盒；确认无测试钩子/测试目录编译依赖 |
 
-两 job 独立检出、生成并构建，不能借用另一个 job 或本机的产物。configure 离线核验仓库内数值快照 SHA-256；工具安装联网与 configure 不联网分开处理。仅权限 `contents: read`，不使用 pull_request_target 来运行 PR 代码；失败后仍上传已有日志，不能以 continue-on-error 把失败改为成功。
+两 job 独立检出、生成并构建，不能借用另一个 job 或本机的产物。configure 离线核验仓库内固定版本数值依赖源码的逐文件 SHA-256；工具安装联网与 configure 不联网分开处理。仅权限 `contents: read`，不使用 pull_request_target 来运行 PR 代码；失败后仍上传已有日志，不能以 continue-on-error 把失败改为成功。
 
 - [x] **1. 写防假绿的红测试。** 在 driver 自测加入 `test_rejects_empty_case_list`，提交 schema_version=1、cases=[] 的合法 JSON，断言驱动退出 2、未打印 PASS；运行 `python -m unittest discover -s tests/driver -v`，当前空清单会返回成功，应真实观测到断言失败。保留原有坏 golden、超时后继续、严格 UTF-8 与隔离用例。
 
@@ -270,7 +270,7 @@ def test_rejects_empty_case_list(self):
 
 触发语义及跳过检查的影响以 [GitHub workflow 语法](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax)和[必需检查排障](https://docs.github.com/en/pull-requests/how-tos/merge-and-close-pull-requests/troubleshooting-required-status-checks)为依据；当前方案不通过路径筛选省略必需检查。
 
-### 任务 CI-02：验证并配置 PR 合并门禁
+### 任务 CI-02：验证并配置 PR 强制合并条件
 
 **依赖：**CI-01 已有实际成功运行，两个固定检查名已在 GitHub 出现。本任务已在用户将仓库改为 public 后，按最新明确授权实施并读回核验。原验收未改动 main 的既有其他保护；用户随后取消了 `Restrict updates`，PR、线性历史及代码质量/CodeQL 要求仍保留。当前配置与原验收历史分别见 [CI 与合并规则](../rules/CI与合并规则.md)，CI 绿色不代表其他合并条件自动满足。
 
@@ -278,10 +278,10 @@ def test_rejects_empty_case_list(self):
 
 **Interfaces:** main 必须通过 PR 更新并要求 `windows-debug`、`windows-release` 两项最新有效检查通过，保留禁止直接写 main 的约束；dev 要求同两项状态检查，本任务不额外要求所有 dev 改动必须走 PR。检查来源使用 GitHub Actions；平台设置采用实际运行显示的精确名称并要求与当前目标分支保持最新。任何失败、缺失、待运行或取消的必需检查都不能作为可合并成功证据。
 
-- [x] **1. 核验现状与能力。** 读取仓库默认分支、现有保护规则、两项实际检查名及管理权限；按 GitHub 当前仓库类型/可用能力确认可设置门禁。无法设置时记录具体权限或能力原因与手工配置步骤，本项保持待完成，不将 CI-01 的绿色结果冒充强制门禁。
+- [x] **1. 核验现状与能力。** 读取仓库默认分支、现有保护规则、两项实际检查名及管理权限；按 GitHub 当前仓库类型/可用能力确认可设置强制合并条件。无法设置时记录具体权限或能力原因与手工配置步骤，本项保持待完成，CI-01 构建测试成功须与平台已强制执行合并条件分别记录。
 - [x] **2. 准备并应用配置。** 保存原有配置及精确增补内容：main 的 require PR、两项 required status checks 和最新分支要求；dev 的两项 required status checks。保留已有保护，不加入 CI 机器人推送/自动合并权限，不为试跑直接更新 main。按照当次执行授权通过 GitHub 界面或 API 配置并读回核对。
 - [x] **3. 验证失败被拦截。** 在派生验证分支复用错误 golden 的失败版本，分别面向 dev/main 检查 PR 合并状态，证明所需检查失败确实阻止合并；面向 main 的验证 PR 不执行实际合并。保存设置读回、检查结果与阻止原因，不仅截取 Actions 页红色。
-- [x] **4. 恢复并确认成功条件。** 恢复预期，确保针对最新 PR 提交的两项检查成功且门禁已满足；如还有冲突或其他原有审批要求，分别记录，不为得到“可合并”而降低保护。恢复故意失败差异，不通过管理员绕过检查；保存最终 SHA 和运行链接。
+- [x] **4. 恢复并确认成功条件。** 恢复预期，确保针对最新 PR 提交的两项检查成功且必需状态检查条件已满足；如还有冲突或其他原有审批要求，分别记录，不为得到“可合并”而降低保护。恢复故意失败差异，不通过管理员绕过检查；保存最终 SHA 和运行链接。
 - [x] **5. 文档与提交。** 在 docs/CI与合并规则.md 分别记录 CI 自动运行、远端规则生效和红绿合并状态证据；提交 `docs: record required CI merge checks`。只有 CI-01 与 CI-02 各自验收通过，才把本 CI 阶段标为完成。
 
 GitHub 的 required checks 与跳过/取消状态行为见 [状态检查](https://docs.github.com/en/pull-requests/reference/status-checks)和[必需检查排障](https://docs.github.com/en/pull-requests/how-tos/merge-and-close-pull-requests/troubleshooting-required-status-checks)。
@@ -481,7 +481,7 @@ print(int(-2.9));
 
 **Files:** Create `src/diagnostic/diagnostic.hpp`、`src/diagnostic/diagnostic.cpp`、`tests/internal/failure_integration_cases.cpp`、`tests/blackbox/errors/manifest.json` 和 cases/expected；Modify failure、Session、VM统一边界、TestHooks、WindowsHostIO、CMake、默认manifest。
 
-**Interfaces:** Produces拥有存储的Diagnostic/实际调用链快照及 `report_failure(const Diagnostic&,HostIO&)`；EmergencyFailure固定记录和无分配最小报告路径保持独立。完成全部FaultPoint接缝；HostIO错误不直接成为语言异常对象，用户不获得catch/栈访问接口。
+**Interfaces:** Produces拥有存储的Diagnostic/出错时的实际调用链记录及 `report_failure(const Diagnostic&,HostIO&)`；EmergencyFailure固定记录和无分配最小报告路径保持独立。完成全部FaultPoint接缝；HostIO错误不直接成为语言异常对象，用户不获得catch/栈访问接口。
 
 - [ ] **1. 写红测试。** 设计demo的inner在第2行 `return x + 1;` 失败，首行位置精确2:14，Type/1；实际链outer→inner，print不入用户链。错误参数/入口读取无虚构位置；invalid UTF-8为Frontend1。failure_fallback先登记Runtime/Type，再注入DiagnosticSnapshot/bad_alloc/OsWrite，保持exit1，报告最多一次；没有已有首错的宿主故障为3。
 
@@ -493,7 +493,7 @@ REQUIRE(first.header().domain == FailureDomain::Runtime);
 REQUIRE(first.header().reason == ReasonCode::Type);
 ```
 - [ ] **2. 确认红。** 重建运行 `--case failure_integration` 和 `python tools/run_blackbox.py --interpreter build/debug/myb.exe --manifest tests/blackbox/errors/manifest.json`，应在排版/链/低资源路径处发现未满足断言。
-- [ ] **3. 实现。** VM顶层边界在帧/源码可用时先快照再unwind；详细消息失败退固定首错，不为了清理分配/GC。真实executing_ip归失败，用户文本控制字符转义、无源码摘录；stderr失败停止递归。显式注销根幂等，Builder/VM先于Heap清空，Heap先于Schema，Registry最后；未知宿主异常为Internal3，不伪装成MYB错误。
+- [ ] **3. 实现。** VM顶层边界在帧/源码可用时先保存诊断和实际调用链，再unwind；详细消息失败退固定首错，不为了清理分配/GC。真实executing_ip归失败，用户文本控制字符转义、无源码摘录；stderr失败停止递归。显式注销根幂等，Builder/VM先于Heap清空，Heap先于Schema，Registry最后；未知宿主异常为Internal3，不伪装成MYB错误。
 - [ ] **4. 验证绿。** 两组为0；跨04/08/11/13/14/16枚举故障位置，要求无悬空登记/根、未提交函数不入链、标记失败不sweep、遍历计数在Heap整体清空前已归零。用额外RootedValue保留被遍历数组以证明解除确实发生，不能只因对象已销毁而得到计数零。源码含300层分组的语法合法表达式触发AST Capacity/3而非Syntax/1，补外部资源分类证据。满足Review Focus 3/5；try_*与首错共存、既有stdout/文件副作用不回滚均覆盖。
 - [ ] **5. 提交。** 聚合errors组后提交 `fix: preserve diagnostics and cleanup across host failures`；不将OS强制终止/内存破坏写成受控可恢复测试承诺。
 
@@ -512,7 +512,7 @@ print("after");
 ```
 - [ ] **2. 验证用例能检出缺口。** 构建后运行全内部测试和默认黑盒；只对新覆盖导致的失败建立修复目标，不破坏已通过实现来机械制造红色。驱动自身“错误golden/死循环”检出能力由01的自测保证。
 - [ ] **3. 修复与复现。** 逐一修复真实差异；新建build/verify-clean进行干净配置/并行初建，修改.l/.y及相关头验证增量重生成，再恢复无语义改动。用含空格/中文路径的检出副本重现；Release单独build/release，MYB_BUILD_INTERNAL_TESTS=OFF，不依赖Debug测试接缝/生成物。记录实际运行所需GCC DLL/PATH，核心不依赖MSYS运行时。
-- [ ] **4. 验证绿。** Debug执行 `& .\build\debug\myb_internal_tests.exe`、默认黑盒和驱动unittest；Release执行 `python tools/run_blackbox.py --interpreter build/release/myb.exe`，全部正式例通过、退出0。记录工具版本、命令、计数、失败修复、控制台证据；真实控制台未完成则本任务仍未完成。README从零指令可复现，git中只有手写源/规则/依赖快照/测试/文档。
+- [ ] **4. 验证绿。** Debug执行 `& .\build\debug\myb_internal_tests.exe`、默认黑盒和驱动unittest；Release执行 `python tools/run_blackbox.py --interpreter build/release/myb.exe`，全部正式例通过、退出0。记录工具版本、命令、计数、失败修复、控制台证据；真实控制台未完成则本任务仍未完成。README从零指令可复现，git中只有手写源/规则/固定版本依赖源码/测试/文档。
 - [ ] **5. 提交。** 完成全分支独立审查、处理实际问题并复验后提交 `docs: record reproducible MYB interpreter acceptance`；本计划不自动授权推送/合并/main写入。验收成功才将对应checkbox标完成，保存实际证据位置。
 
 ## 设计覆盖与任务归属
@@ -531,8 +531,8 @@ print("after");
 | for/块/循环出口与错误清理 | 10/13/17 | 每轮状态、别名禁增删、嵌套计数、continue/return/错误收尾 |
 | deep_copy/显示/21内置 | 12/14/15/16 | 共享/循环/字段身份、统一格式、全部成功/类型/数量边界 |
 | Windows/UTF-8/文件/管道/控制台Q02 | 02/16 | 字节fixture、中文路径、坏编码/EOF/部分I/O、真实终端记录 |
-| 故障分类/首错/报告降级 | 02/11/13/17 | 0/1/2/3、不伪帧/位置、先快照后清理、stderr失败不递归 |
-| GitHub CI/合并门禁 | CI-01/CI-02 | 全新 Windows job、非空测试集、原生命令失败非零、PR 正常→失败→恢复运行及合并状态、实际保护设置 |
+| 故障分类/首错/报告降级 | 02/11/13/17 | 0/1/2/3、不伪帧/位置、先保存诊断和调用链后清理、stderr失败不递归 |
+| GitHub CI/强制合并条件 | CI-01/CI-02 | 全新 Windows job、非空测试集、原生命令失败非零、PR 正常→失败→恢复运行及合并状态、实际保护设置 |
 | 构建/测试自动化 | 01/05/18 | 干净/增量/并行/Release、驱动自证、一条命令全量黑盒 |
 
 ## 自审记录与执行交接
@@ -540,6 +540,6 @@ print("after");
 - 已按设计逐节对照，解释器、21内置、GC/资源、Windows边界、CLI/诊断及构建/测试均有任务归属；原计划的测试值为预期；M1 与 CI 已有实测证据，见测试报告和 CI 与合并规则；M2–M4 的命令及验收仍为未来任务。
 - 前期以内部协议/最小黑盒验收，中期按功能滚动聚合；07解析的新语法由08完整生成接管，11返回数组的对象验证由12/13接管，14完整例依赖15的assert。这些依赖不能被当作提前完成。
 - 正式用户/Agent开发指南、>=200行应用及真实开发记录、Python同功能性能报告属于后续课程交付，继续按原路线图10–13独立安排；本计划不选择应用或新增游戏API。
-- M1、CI-01、CI-02 已实施并验收。CI 工作流、代码/仅文档 PR、错误预期失败、恢复成功及远端强制规则均有实际证据；原 CI-02 验收未修改 main 的既有保护，main 验证 PR 已关闭且未合并。用户后续取消 `Restrict updates` 的现行配置见 [CI 与合并规则](../rules/CI与合并规则.md)；原 JSON 快照保留为历史验收证据。
+- M1、CI-01、CI-02 已实施并验收。CI 工作流、代码/仅文档 PR、错误预期失败、恢复成功及远端强制规则均有实际证据；原 CI-02 验收未修改 main 的既有保护，main 验证 PR 已关闭且未合并。用户后续取消 `Restrict updates` 的现行配置见 [CI 与合并规则](../rules/CI与合并规则.md)；原 JSON 配置记录保留为历史验收证据。
 
-后续待实施范围从 M2 的任务 07 起；M2–M4 尚未启动。启动时按用户最新授权审阅对应任务与实现基线，再选择当前会话逐项执行或子代理分工；继续保留阶段验收、独立审查和可复现证据。
+后续待实施范围从 M2 的任务 07 起；M2–M4 尚未启动。启动时按用户最新授权审阅对应任务、已批准设计及已实现代码，再选择当前会话逐项执行或子代理分工；继续保留阶段验收、独立审查和可复现证据。

@@ -27,4 +27,4 @@ pwsh -File ./tools/ci.ps1 -Configuration Debug -Msys2Root D:/msys64
 pwsh -File ./tools/ci.ps1 -Configuration Release -Msys2Root D:/msys64
 ```
 
-脚本需要 PowerShell 7+（`pwsh`）；MSYS2 安装根按实际环境传入。自动运行和远端门禁的独立验收状态见 [CI 与合并规则](docs/rules/CI与合并规则.md)。
+脚本需要 PowerShell 7+（`pwsh`）；MSYS2 安装根按实际环境传入。自动回归与远端合并条件的验收记录见 [CI 与合并规则](docs/rules/CI与合并规则.md)。

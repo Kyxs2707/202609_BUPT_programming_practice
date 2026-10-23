@@ -44,7 +44,7 @@ CI 脚本要求 PowerShell 7+，与 GitHub 的 `shell: pwsh` 一致；通过 `#R
 
 ## GitHub 运行验收
 
-首轮 [运行 39875495711](https://github.com/Kyxs2707/202609_BUPT_programming_practice/actions/runs/39875495711) 实际检出 CLI 自测路径表示差异：runner 的 MinGW Python 输出 `/` 路径，Windows 宿主诊断输出 `\`。已只修正测试的 native 路径预期，保持行列、错误类别、退出值与源码未被修改的断言；本机 Debug/Release 各 7 项 CLI 复验通过，远端最终复验通过。该次失败的两个 job 仍成功上传日志。同样的路径差异会影响黑盒 `$SCRIPT`；本机正斜杠路径探针实际复现 14/25 例路径匹配失败后，驱动改为在 Windows 上向解释器传入原生路径，并对相同参数转义生成占位符。未归一化实际输出或放宽诊断断言；探针、driver 自测与 Release 黑盒全部通过。补充持久回归 `test_forward_slash_pathlib_matches_windows_native_diagnostic`：对修复前驱动实际失败，对当前驱动通过；诊断子进程 fixture 始终按 Windows 原生路径报告，独立于 Python 的路径分隔符偏好。
+首轮 [运行 39875495711](https://github.com/Kyxs2707/202609_BUPT_programming_practice/actions/runs/39875495711) 实际检出 CLI 自测路径表示差异：runner 的 MinGW Python 输出 `/` 路径，Windows 宿主诊断输出 `\`。已只修正测试的 native 路径预期，保持行列、错误类别、退出值与源码未被修改的断言；本机 Debug/Release 各 7 项 CLI 复验通过，远端最终复验通过。该次失败的两个 job 仍成功上传日志。同样的路径差异会影响黑盒 `$SCRIPT`；本机正斜杠路径验证程序实际复现 14/25 例路径匹配失败后，驱动改为在 Windows 上向解释器传入原生路径，并对相同参数转义生成占位符。未归一化实际输出或放宽诊断断言；路径验证程序、driver 自测与 Release 黑盒全部通过。补充持久回归 `test_forward_slash_pathlib_matches_windows_native_diagnostic`：对修复前驱动实际失败，对当前驱动通过；诊断子进程测试程序始终按 Windows 原生路径报告，独立于 Python 的路径分隔符偏好。
 
 代码验证 PR 为 [PR #1 → dev](https://github.com/Kyxs2707/202609_BUPT_programming_practice/pull/1)，携带远端尚未包含的已验收 M1 前置提交，本次不增加语言功能。
 
@@ -63,9 +63,9 @@ CI 脚本要求 PowerShell 7+，与 GitHub 的 `shell: pwsh` 一致；通过 `#R
 
 合入 dev 的提交 `d016dc2f12c9a75efe5149f2222e8340e577f8a2` 也实际以 `push` 事件触发 [运行 39877856449](https://github.com/Kyxs2707/202609_BUPT_programming_practice/actions/runs/39877856449)，两个固定 job 均出现。
 
-## CI-02：远端强制门禁
+## CI-02：远端强制合并检查
 
-CI-01 阶段仓库为私有，保护 API 曾返回要求 GitHub Pro/公开仓库的 403；2026-10-23 用户将仓库设为 public 并授权完成 CI-02。重新核验公开状态、默认分支 main 和 admin 权限后，读取并保存全部已有规则，再增补 CI 门禁。
+CI-01 阶段仓库为私有，保护 API 曾返回要求 GitHub Pro/公开仓库的 403；2026-10-23 用户将仓库设为 public 并授权完成 CI-02。重新核验公开状态、默认分支 main 和 admin 权限后，读取并保存全部已有规则，再增补 CI 必需检查规则。
 
 ### 当前生效配置（2026-10-23 复核）
 
@@ -92,11 +92,11 @@ main 另有 [main ruleset 25686722](https://github.com/Kyxs2707/202609_BUPT_prog
 
 两份规则集叠加生效：main 必须满足 PR、两项必需 CI、目标分支最新、线性历史和扫描等条件；取消 `Restrict updates` 不代表其他条件已经满足，具体合并状态以实际面向 main 的 PR 为准。dev 仍仅要求两项必需检查及目标分支最新，不额外要求 PR 或审批人数。
 
-实施前原始 main 配置、精确新增请求、服务端读回、原配置 SHA-256、分支引用与逐项红绿验收保存在 [门禁配置与验收快照](../ci/merge-gate-evidence.json)。原 CI-02 实施只新增 CI 规则集，验收结束时 main 规则集与实施前逐项相等；用户后续取消 `Restrict updates` 的操作发生在该快照之后。快照保留原始验收事实，不作为当前配置副本，也不改写其中的 `update`、`original_main_ruleset_unchanged` 或合并状态；内容仅含公开配置与验证结果，不含凭证。
+实施前原始 main 配置、精确新增请求、服务端读回、原配置 SHA-256、分支引用与逐项红绿验收保存在 [合并规则配置与验收记录](../ci/merge-gate-evidence.json)。原 CI-02 实施只新增 CI 规则集，验收结束时 main 规则集与实施前逐项相等；用户后续取消 `Restrict updates` 的操作发生在该次验收之后。这份记录保留原始验收事实，不作为当前配置副本，也不改写其中的 `update`、`original_main_ruleset_unchanged` 或合并状态；内容仅含公开配置与验证结果，不含凭证。
 
 ### 真实失败与恢复验证（原 CI-02 验收）
 
-验证使用 dev 派生分支 `codex/myb-ci02-verification`，分别建立 [PR #3 → dev](https://github.com/Kyxs2707/202609_BUPT_programming_practice/pull/3) 和 [PR #4 → main](https://github.com/Kyxs2707/202609_BUPT_programming_practice/pull/4)，均非 draft。main PR 只读取门禁状态，恢复验证后已关闭、未合并。
+验证使用 dev 派生分支 `codex/myb-ci02-verification`，分别建立 [PR #3 → dev](https://github.com/Kyxs2707/202609_BUPT_programming_practice/pull/3) 和 [PR #4 → main](https://github.com/Kyxs2707/202609_BUPT_programming_practice/pull/4)，均非 draft。main PR 只读取合并条件满足情况，恢复验证后已关闭、未合并。
 
 | 目标 | 阶段与提交 | 两项必需检查 | GitHub 合并状态 | 运行 |
 |---|---|---|---|---|
@@ -107,9 +107,9 @@ main 另有 [main ruleset 25686722](https://github.com/Kyxs2707/202609_BUPT_prog
 
 排队阶段同样实际观测到两 PR 为 BLOCKED。失败阶段仅将 `three.stdout` 从 `3\n` 临时改为 `4\n`；四份 job 日志均确认 stdout 预期 4/实际 3、`24 passed, 1 failed, 25 total`、脚本退出 1，并成功上传失败日志。恢复后两组 Debug/Release 均全绿，原始 `3\n` 字节已恢复；`git diff dac9a19 a92d05a --exit-code` 为 0，临时错误差异不留在最终源码。
 
-拦截证据包含 active ruleset 读回、GraphQL `CheckRun.isRequired(pullRequestNumber)` 为 true、检查实际失败和 `mergeStateStatus: BLOCKED`，不是仅凭 Actions 红色截图。`mergeable: MERGEABLE` 只说明无合并冲突，不能代替门禁状态。没有调用真实 merge API 或写入 main 试探保护。
+拦截证据包含 active ruleset 读回、GraphQL `CheckRun.isRequired(pullRequestNumber)` 为 true、检查实际失败和 `mergeStateStatus: BLOCKED`。`mergeable: MERGEABLE` 表示无合并冲突；必需检查与其他保护条件按实际合并状态与规则读回判定。没有调用真实 merge API 或写入 main 试探保护。
 
-**原验收中的 main CI 结果与其他保护分开判断。** 恢复后两项 CI 要求已满足，但 PR #4 当时总体仍为 BLOCKED；当时 main ruleset 包含 `update`（限制更新且无绕过）、线性历史、代码质量及 CodeQL 要求。该状态是原配置下的历史结果，不代表用户取消 `Restrict updates` 后的新 PR 状态。dev 当时恢复为 CLEAN，证明在仅有新增 CI 门禁的目标上，失败会阻止合并、成功后门禁条件满足。
+**原验收中的 main CI 结果与其他保护分开判断。** 恢复后两项 CI 要求已满足，但 PR #4 当时总体仍为 BLOCKED；当时 main ruleset 包含 `update`（限制更新且无绕过）、线性历史、代码质量及 CodeQL 要求。该状态是原配置下的历史结果，不代表用户取消 `Restrict updates` 后的新 PR 状态。dev 当时恢复为 CLEAN，证明在仅要求新增 CI 必需检查的 dev 分支上，检查失败会阻止合并、成功后满足对应合并条件。
 
 原 CI-02 验收未更新 main/dev 分支内容；验收结束时 main 为 `b79e69dd931a98a7b103651b6d3ccbf6affe2f44`，dev 为 `d016dc2f12c9a75efe5149f2222e8340e577f8a2`。PR #3 汇总 CI-01/CI-02 文档供审阅，目标为 dev；最新提交及检查见 PR 页。
 

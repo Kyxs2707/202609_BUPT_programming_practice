@@ -310,7 +310,6 @@
       "merge_state": "BLOCKED",
       "run": {
         "id": 39880489423,
-        "display_title": "test: 验证 dev 的必需 CI 合并门禁",
         "head_sha": "b5caf23d098ec4a9f404fd601b5d5782bc5ef827",
         "event": "pull_request",
         "conclusion": "failure",
@@ -356,7 +355,6 @@
       "merge_state": "BLOCKED",
       "run": {
         "id": 39880492344,
-        "display_title": "test: 验证 main 的必需 CI 合并门禁（不合并）",
         "head_sha": "b5caf23d098ec4a9f404fd601b5d5782bc5ef827",
         "event": "pull_request",
         "conclusion": "failure",
@@ -402,7 +400,6 @@
       "merge_state": "CLEAN",
       "run": {
         "id": 39880946990,
-        "display_title": "test: 验证 dev 的必需 CI 合并门禁",
         "head_sha": "a92d05a969377b7da8a3f769d5a62eb036e8458d",
         "event": "pull_request",
         "conclusion": "success",
@@ -448,7 +445,6 @@
       "merge_state": "BLOCKED",
       "run": {
         "id": 39880947423,
-        "display_title": "test: 验证 main 的必需 CI 合并门禁（不合并）",
         "head_sha": "a92d05a969377b7da8a3f769d5a62eb036e8458d",
         "event": "pull_request",
         "conclusion": "success",
