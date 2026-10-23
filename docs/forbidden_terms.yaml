@@ -1,0 +1,19 @@
+forbidden_terms:
+  - 探针
+  - 快照
+  - 门禁
+  - 夹具
+  - 哈希
+  - 冒烟
+  - 基线
+scope:
+  - title
+  - body
+  - table
+  - code_block
+  - comment
+  - caption
+  - link_text
+  - filename
+  - metadata
+on_hit: rewrite_or_delete
