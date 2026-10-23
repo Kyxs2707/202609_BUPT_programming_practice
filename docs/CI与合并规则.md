@@ -56,7 +56,7 @@ CI 脚本要求 PowerShell 7+，与 GitHub 的 `shell: pwsh` 一致；通过 `#R
 
 三个阶段均实际生成 `windows-debug-logs` 与 `windows-release-logs`，可在各运行页 Artifacts 下载；完整 job 日志也在运行页。错误预期阶段仅把 `three.stdout` 从 `3\n` 改为 `4\n`，两 job 均报告 `24 passed, 1 failed, 25 total`、stdout 预期 4/实际 3，并由脚本保留退出 1。恢复提交的完整源码树与正常提交相同（`git diff 0070a4c 9787e6f --exit-code` 为 0），最终文件仍为原始 `3\n` 字节。实际检查名为 `windows-debug`、`windows-release`，来源 GitHub Actions App ID `15368`。
 
-仅文档 PR 须在代码合入 dev 后独立建立，累计 diff 必须只有文档；不能将 PR #1 内的文档提交冒充仅文档 PR。目前等待用户对更新共享 dev 的合并选择，不修改 main。
+仅文档 PR 须在代码合入 dev 后独立建立，累计 diff 必须只有文档；不能将 PR #1 内的文档提交冒充仅文档 PR。PR #1 已按用户授权合并到 dev（`d016dc2f12c9a75efe5149f2222e8340e577f8a2`），main 保持 `b79e69dd931a98a7b103651b6d3ccbf6affe2f44`。本节文档收尾从新 dev 建立独立文档 PR，检查触发结果随后记录。代码 PR 合并前的最新文档提交也已在 [运行 39877521916](https://github.com/Kyxs2707/202609_BUPT_programming_practice/actions/runs/39877521916) 两 job 全绿。
 
 ## 远端门禁现状与恢复步骤
 
