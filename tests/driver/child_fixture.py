@@ -1,4 +1,5 @@
 """Independent child process used to verify the black-box runner."""
+import os
 import pathlib
 import sys
 import time
@@ -9,7 +10,10 @@ if mode == "timeout":
 elif mode == "invalid-utf8":
     sys.stderr.buffer.write(b"\xff")
 elif mode == "script-path":
-    sys.stderr.buffer.write(str(pathlib.Path(__file__).resolve()).encode("utf-8"))
+    path = str(pathlib.Path(__file__).resolve())
+    if os.name == "nt":
+        path = path.replace("/", "\\")
+    sys.stderr.buffer.write(path.encode("utf-8"))
 elif mode == "files":
     payload = pathlib.Path("input.bin").read_bytes()
     pathlib.Path("output.bin").write_bytes(payload)

@@ -1,5 +1,6 @@
 """Exercise the real runner using an independent executable fixture."""
 import json
+import os
 from pathlib import Path
 import shutil
 import subprocess
@@ -104,6 +105,30 @@ class BlackboxDriverTests(unittest.TestCase):
         result = self.run_cases([case])
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertFalse((self.directory / "nested workspace").exists())
+
+    @unittest.skipUnless(os.name == "nt", "Windows native diagnostic paths")
+    def test_forward_slash_pathlib_matches_windows_native_diagnostic(self):
+        (self.directory / "path.in").write_bytes(b"script-path")
+        case = self.case(stdin_file="path.in", expect_exit=0,
+                         expect_stdout_file="empty.bin", expect_stderr_regex="$SCRIPT")
+        del case["expect_stderr_file"]
+        manifest = self.directory / "forward-slash.json"
+        manifest.write_text(json.dumps(dict(schema_version=1, cases=[case])), encoding="utf-8")
+        # Characterize the MinGW pathlib spelling observed on the CI runner,
+        # while the independent child reports the actual Windows native path.
+        prelude = """
+import pathlib, runpy, sys
+path_type = type(pathlib.Path())
+original = path_type.__str__
+path_type.__str__ = lambda self: original(self).replace(chr(92), '/')
+sys.argv = sys.argv[1:]
+runpy.run_path(sys.argv[0], run_name='__main__')
+"""
+        result = subprocess.run([sys.executable, "-c", prelude, str(RUNNER),
+                                 "--interpreter", sys.executable, "--manifest", str(manifest)],
+                                capture_output=True, timeout=15)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn(b"1 passed", result.stdout)
 
     def test_rejects_bad_manifest_and_duplicate_ids(self):
         for cases, extra in (([self.case(), self.case()], {}), ([self.case()], {"schema_version": 2}),
