@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 
+/** @brief 从 Windows 宽字符参数建立 UTF-8 命令会话，并处理会话建立前的失败。 */
 int wmain(int argc, wchar_t **argv) {
     myb::EmergencyFailure first;
     myb::WindowsHostIO io(first);
@@ -15,6 +16,7 @@ int wmain(int argc, wchar_t **argv) {
         owned.reserve(static_cast<std::size_t>(argc > 0 ? argc - 1 : 0));
         for (int i = 1; i < argc; ++i)
             owned.push_back(myb::wide_to_utf8(argv[i], {first, {}}));
+        // 等 owned 完成增长后再建立视图，保证 parse_options 借用的字符存储稳定。
         std::vector<std::string_view> args;
         args.reserve(owned.size());
         for (const auto &arg : owned)
@@ -28,8 +30,7 @@ int wmain(int argc, wchar_t **argv) {
         first.record_first({myb::FailureDomain::Resource, myb::ReasonCode::Allocation});
     } catch (const myb::Failure &failure) {
         if (parsing) {
-            // Invalid Unicode arguments and grammar both belong to the CLI, with no source
-            // position.
+            // 参数转换和命令行语法失败都归用法错误，此时尚无源码位置。
             try {
                 io.write_stderr(
                     "myb: usage error: expected myb [--check] [--] <file>; use --help\n");

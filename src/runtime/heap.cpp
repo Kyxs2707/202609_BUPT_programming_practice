@@ -47,7 +47,7 @@ void Heap::check_output(const RootedValue &out) {
         invariant_failed("output root does not belong to this heap session");
 }
 void Heap::update_threshold() noexcept {
-    // All accounting changes checked this sum before committing.
+    // 每次提交记账前均已检查此和；阈值翻倍在上界饱和，不把阈值溢出当作容量故障。
     const auto total = managed_bytes_ + builder_bytes_;
     const auto maximum = std::numeric_limits<std::size_t>::max();
     next_gc_ = total > maximum / 2 ? maximum : std::max(minimum_gc, total * 2);
@@ -63,7 +63,7 @@ void Heap::before_growth(std::size_t growth) {
 #endif
     if (!failure_.is_set() && (force || expected > next_gc_))
         collect();
-    // Only a request still large after this collection advances the threshold on success.
+    // 只有回收后仍不小于阈值的请求，才在增长成功后再次更新阈值。
     large_request_ = growth >= next_gc_;
 }
 void Heap::after_growth() noexcept {
@@ -111,7 +111,7 @@ void Heap::make_array(std::size_t initial_capacity, RootedValue &out) {
         const auto updated = add(managed_bytes_, object_bytes(*object));
         (void)add(updated, builder_bytes_);
         auto *pointer = object.get();
-        // The entire construction/registration/publication interval is GC-free.
+        // 构造、登记和写入输出根之间不再回收，局部所有权覆盖登记前的失败路径。
         if (objects_.size() == objects_.capacity()) {
             if (objects_.size() == objects_.max_size())
                 capacity_failed();
@@ -142,6 +142,7 @@ void Heap::make_struct(const StructSchema &schema, RootedValue &out) {
 #ifdef MYB_TEST_HOOKS
             TestHooks::hit(FaultPoint::Payload);
 #endif
+            // null 占位使逐字段填充前的半成品也可安全扫描，业务类型检查由调用方完成。
             object->fields.resize(schema.fields.size(), Value{NullValue{}});
         }
         const auto updated = add(managed_bytes_, object_bytes(*object));
@@ -172,7 +173,7 @@ void Heap::make_string(TextBuilder &&builder, RootedValue &out) {
     if (!count)
         invariant_failed("string publication requires valid UTF-8");
     check_elements(*count, std::numeric_limits<std::size_t>::max());
-    // The already-accounted builder payload is transferred, rather than allocated again.
+    // Builder 负载已经记账，本次增长只增加对象头；发布时把缓冲容量转入对象统计。
     before_growth(sizeof(StringObject));
     try {
 #ifdef MYB_TEST_HOOKS
@@ -194,7 +195,7 @@ void Heap::make_string(TextBuilder &&builder, RootedValue &out) {
                                                                             : old_capacity + step;
             objects_.reserve(capacity);
         }
-        // std::string with the default allocator transfers without allocation or GC.
+        // 先保证登记表容量；默认分配器的字符串移动交接无需分配或 GC。
         object->utf8 = std::move(builder.buffer_);
         object->codepoint_count = *count;
         const auto updated = add(managed_bytes_, object_bytes(*object));
@@ -215,6 +216,7 @@ void Heap::make_string(TextBuilder &&builder, RootedValue &out) {
     }
 }
 void Heap::reserve_array(ArrayRef array, std::size_t required_capacity) {
+    // 数组由调用方根保护且对象地址稳定；此处借用 vector 本身，未借用其可搬移元素。
     auto &elements = array.ptr->elements;
     check_elements(required_capacity, elements.max_size());
     if (required_capacity <= elements.capacity())
@@ -255,6 +257,7 @@ void Marker::mark(Value value) {
 void Marker::mark_object(HeapObject *object) {
     if (object->marked)
         return;
+    // 入队前标记可去重循环边；若入队分配失败，collect 的异常路径会清除所有标记。
     object->marked = true;
     if (heap_.mark_worklist_.size() == heap_.mark_worklist_.capacity()) {
         if (heap_.mark_worklist_.size() == heap_.mark_worklist_.max_size())
@@ -289,7 +292,7 @@ void Heap::collect() {
                     break;
                 }
             }
-            // Validate survivor accounting before entering the nonthrowing sweep.
+            // 清除阶段只执行无异常操作；存活容量检查须先完成，防止按部分结果销毁对象。
             std::size_t survivor_bytes = 0;
             for (const auto &object : objects_)
                 if (object->marked)
@@ -299,6 +302,7 @@ void Heap::collect() {
             for (std::size_t source = 0; source < objects_.size(); ++source) {
                 if (objects_[source]->marked) {
                     objects_[source]->marked = false;
+                    // 只移动所有权登记项，受管对象自身和其中的对象引用地址保持稳定。
                     if (destination != source)
                         objects_[destination] = std::move(objects_[source]);
                     ++destination;
@@ -309,6 +313,7 @@ void Heap::collect() {
             update_threshold();
             collecting_ = false;
         } catch (...) {
+            // 标记或存活量核算失败时保留全部对象，复原状态供会话统一清理。
             for (const auto &object : objects_)
                 if (object)
                     object->marked = false;

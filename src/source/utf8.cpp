@@ -30,6 +30,7 @@ std::optional<DecodedCodePoint> decode_one(std::string_view s, std::size_t i) no
             return {};
         value = (value << 6) | (c & 63);
     }
+    // 续字节形状合法后，还须排除过长编码、代理项和 Unicode 上界之外的值。
     if (value < min || value > 0x10ffff || (value >= 0xd800 && value <= 0xdfff))
         return {};
     return DecodedCodePoint{value, width};

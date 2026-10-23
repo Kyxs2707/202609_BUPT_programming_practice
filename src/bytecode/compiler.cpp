@@ -8,6 +8,7 @@
 #endif
 namespace myb {
 namespace {
+/** @brief 检查表长度可转为字节码编号；达到编号上限时记录容量失败。 */
 std::uint32_t index_of(std::size_t n, ErrorSite site) {
     if (n >= std::numeric_limits<std::uint32_t>::max())
         fail(site, FailureDomain::Resource, ReasonCode::Capacity, "bytecode table is too large");
@@ -39,7 +40,8 @@ void BytecodeCompiler::constant(Value value, SourceSpan span) {
 #ifdef MYB_TEST_HOOKS
     TestHooks::hit(FaultPoint::ProgramConstants);
 #endif
-    unit_->constants.push_back(value); // no MYB collection before container root takes over
+    // 此处仅增长宿主容器，不触发 MYB GC；写入后由程序常量根集合接管。
+    unit_->constants.push_back(value);
     emit(Op::CONST, span, index);
 }
 void BytecodeCompiler::literal(const Node &node) {
@@ -51,6 +53,7 @@ void BytecodeCompiler::literal(const Node &node) {
         [&](const auto &value) {
             using T = std::decay_t<decltype(value)>;
             if constexpr (std::is_same_v<T, std::string>) {
+                // TextBuilder 增长和字符串创建均可触发 GC，结果根先于这些操作登记。
                 RootedValue result(roots_);
                 TextBuilder builder(heap_);
                 builder.append(std::span<const char>(value.data(), value.size()));
@@ -105,6 +108,7 @@ void BytecodeCompiler::visit(const CallExpr &n) {
     auto index = index_of(unit_->calls.size(), {first_, n.span()});
     auto arity = index_of(n.args().size(), {first_, n.span()});
     unit_->calls.push_back({program_->intern_name(n.name(), first_), arity});
+    // 先预检目标和数量，再按源码顺序求值实参；嵌套调用各用自己的调用点编号。
     emit(Op::PRECALL, n.span(), index);
     for (const auto &arg : n.args())
         arg.accept(*this);

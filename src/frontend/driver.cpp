@@ -20,6 +20,7 @@ std::unique_ptr<AstProgram> Driver::parse() {
         scanner_.reset();
         return std::move(program_);
     } catch (...) {
+        // 解析器栈已在展开时释放语义值，此处清理驱动独占的阶段产物。
         scanner_.reset();
         program_.reset();
         throw;

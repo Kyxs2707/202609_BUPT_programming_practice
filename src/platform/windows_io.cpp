@@ -7,6 +7,7 @@
 #include <windows.h>
 namespace myb {
 namespace {
+/** @brief 先保存含 OS 代码的首错，再拼接路径并抛出 I/O 失败。 */
 [[noreturn]] void io_error(std::string_view path, ErrorSite site, FailureDomain domain,
                            std::string_view message, std::uint32_t code) {
     site.failure.record_first({domain, ReasonCode::IO, site.span, code});
@@ -15,12 +16,14 @@ namespace {
     detail.append(path);
     fail(site, domain, ReasonCode::IO, detail, code);
 }
+/** @brief 独占文件句柄；正常路径显式检查关闭结果，异常路径无异常地关闭。 */
 struct Handle {
     HANDLE value{INVALID_HANDLE_VALUE};
     ~Handle() noexcept {
         if (value != INVALID_HANDLE_VALUE)
             CloseHandle(value);
     }
+    /** @brief 先撤销本地所有权再关闭句柄，使关闭失败后的析构不会重复关闭。 */
     void close(ErrorSite site, FailureDomain domain, std::string_view path) {
         auto h = value;
         value = INVALID_HANDLE_VALUE;
@@ -28,10 +31,12 @@ struct Handle {
             io_error(path, site, domain, "file close failed", GetLastError());
     }
 };
+/** @brief 在调用 Windows 的 NUL 终止路径接口前拒绝内嵌 NUL。 */
 void path_check(std::string_view path, ErrorSite site, FailureDomain domain) {
     if (path.find('\0') != path.npos)
         fail(site, domain, ReasonCode::IO, "path contains NUL");
 }
+/** @brief 以二进制方式读完整文件，保留 BOM 和换行，并检查正常路径的关闭结果。 */
 std::string read_file(std::string_view path, ErrorSite site, FailureDomain domain) {
     path_check(path, site, domain);
     auto wide = utf8_to_wide(path, site);
@@ -55,6 +60,11 @@ std::string read_file(std::string_view path, ErrorSite site, FailureDomain domai
     file.close(site, domain, path);
     return result;
 }
+/**
+ * @brief 按句柄类型写尽字节或转换后的 UTF-16；部分写入继续推进，零进度视为失败。
+ *
+ * 句柄由调用方持有，失败允许已有部分输出；本函数不关闭句柄。
+ */
 void write_handle(HANDLE h, std::string_view bytes, ErrorSite site, FailureDomain domain) {
     DWORD mode = 0;
     if (GetConsoleMode(h, &mode)) {
@@ -62,6 +72,7 @@ void write_handle(HANDLE h, std::string_view bytes, ErrorSite site, FailureDomai
         std::size_t at = 0;
         while (at < wide.size()) {
             auto n = std::min<std::size_t>(wide.size() - at, 16384);
+            // 主动分块时保留完整代理对，后续仍以实际写入的代码单元数推进。
             if (at + n < wide.size() && wide[at + n - 1] >= 0xd800 && wide[at + n - 1] <= 0xdbff)
                 --n;
             DWORD wrote = 0;

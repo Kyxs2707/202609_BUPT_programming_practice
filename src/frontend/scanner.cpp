@@ -8,7 +8,7 @@ myb::ScannerContext *yyget_extra(yyscan_t);
 namespace myb {
 Scanner::Scanner(SourceManager &sources, SourceId id) : context_(id, sources.failure()) {
     const auto &bytes = sources.get(id).bytes;
-    // Flex 2.6.4 yy_scan_buffer takes size_t, but stores size - 2 in int.
+    // Flex 2.6.4 接口接收 size_t，内部仍将去掉两个哨兵后的长度存为 int。
     if (bytes.size() > static_cast<std::size_t>(std::numeric_limits<int>::max()) ||
         bytes.size() > input_.max_size() - 2)
         fail({context_.failure, {}}, FailureDomain::Resource, ReasonCode::Capacity,
@@ -26,6 +26,7 @@ Scanner::Scanner(SourceManager &sources, SourceId id) : context_(id, sources.fai
             fail({context_.failure, {}}, FailureDomain::Internal, ReasonCode::Invariant,
                  "scanner rejected input buffer");
     } catch (...) {
+        // 构造失败时析构函数不会执行，先销毁已发布状态，再清扫未接管的块。
         if (handle_) {
             yylex_destroy(handle_);
             handle_ = nullptr;
@@ -98,12 +99,26 @@ void ScannerContext::escape(std::string_view text) {
          text);
 }
 } // namespace myb
+/**
+ * @brief 将 Flex 分配交给当前扫描器的登记表，供异常清理追踪。
+ * @pre scanner 的 yyextra 指向仍存活的 ScannerContext。
+ * @return 由对应登记表拥有的 n 字节区域。
+ */
 void *yyalloc(std::size_t n, yyscan_t scanner) {
     return yyget_extra(scanner)->allocations.allocate(n);
 }
+/**
+ * @brief 通过当前扫描器登记表调整区域大小，失败时保留旧块。
+ * @pre p 为空或由 scanner 对应的登记表拥有。
+ * @return 新区域；成功后原区域失效。
+ */
 void *yyrealloc(void *p, std::size_t n, yyscan_t scanner) {
     return yyget_extra(scanner)->allocations.reallocate(p, n);
 }
+/**
+ * @brief 释放 Flex 区域并撤销当前扫描器中的登记。
+ * @pre p 为空或由 scanner 对应的登记表拥有且尚未释放。
+ */
 void yyfree(void *p, yyscan_t scanner) {
     yyget_extra(scanner)->allocations.release(p);
 }

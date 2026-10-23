@@ -8,6 +8,7 @@
 #include <stdexcept>
 namespace myb {
 namespace {
+/** @brief 转义诊断中的控制字节，保持路径和原因文本位于同一诊断行。 */
 std::string escaped(std::string_view text) {
     std::string out;
     for (unsigned char c : text) {
@@ -33,7 +34,7 @@ Session::Session(EmergencyFailure &first, HostIO &io, const BuiltinRegistry &bui
       heap_(roots_, first) {}
 Session::~Session() noexcept {
     program_.detach_roots();
-    heap_.clear(); // metadata, schemas and source records still exist
+    heap_.clear(); // 对象先释放，此时其借用的元数据、结构描述与源码记录仍存活。
 }
 const CompiledProgram &Session::compile_entry(std::string_view path) {
     DecimalCodec::initialize(first_);
@@ -53,7 +54,7 @@ int Session::run(const Options &options) noexcept {
             try {
                 io_.write_stdout(options.mode == RunMode::Help ? help_text : version_text, false);
             } catch (...) {
-                // Output of a host command is a host failure, never a MYB program I/O error.
+                // 帮助与版本属于宿主命令，其输出失败使用宿主故障退出状态。
                 FailureHeader h{FailureDomain::Internal, ReasonCode::IO};
                 report(h, "cannot write command output");
                 return 3;
@@ -106,7 +107,7 @@ void Session::report(const FailureHeader &header, std::string_view message) noex
             text += ')';
         }
         text += '\n';
-        // A stderr failure ends reporting. It never recurses into this reporter.
+        // stderr 失败后停止报告，避免诊断通路再次调用报告器。
         try {
             io_.write_stderr(text);
         } catch (...) {

@@ -52,8 +52,10 @@ void Checker::visit(const GroupExpr &n) {
 }
 void Checker::visit(const UnaryExpr &n) {
     if (n.op() == UnaryOp::Minus) {
+        // 只接纳负号的直接整数孩子；中间的 GroupExpr 会保留并走普通范围检查。
         if (auto *integer = dynamic_cast<const IntExpr *>(&n.operand());
             integer && magnitude(*integer) == (std::uint64_t{1} << 63)) {
+            // 以负号节点记录 MIN，跳过不能单独表示为 Int64 的正幅值孩子。
             literals_.emplace(&n, INT64_MIN);
             return;
         }

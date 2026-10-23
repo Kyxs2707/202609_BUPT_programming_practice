@@ -12,6 +12,7 @@ VM::VM(Heap &heap, RootRegistry &roots, HostIO &io, EmergencyFailure &first,
       root_set_(roots, this, trace_values) {}
 void VM::trace_values(void *self, Marker &marker) {
     auto &vm = *static_cast<VM *>(self);
+    // 容量和旧槽值不能决定保活；仅活动帧中的绑定状态与有效栈深决定扫描范围。
     for (const auto &frame : vm.frames_) {
         for (auto i = frame.base; i < frame.operand_base; ++i)
             if (vm.states_[i] == BindingState::Initialized)
@@ -46,6 +47,7 @@ void VM::execute(const CompiledProgram &program) {
     if (region > values_.max_size() || region > states_.max_size())
         fail({first_, {}}, FailureDomain::Resource, ReasonCode::Capacity,
              "VM value region is too large");
+    // 在发布活动帧前完成宿主存储准备；调度和内置调用都不再增长这些容器。
     auto required = std::max<std::size_t>(64, region);
 #ifdef MYB_TEST_HOOKS
     TestHooks::hit(FaultPoint::VmValues);
@@ -118,14 +120,15 @@ void VM::execute(const CompiledProgram &program) {
                 const auto saved_sp = current.sp - call.arity;
                 RootedValue result(roots_);
                 NativeContext context{heap_, roots_, io_, first_, span};
-                // Native calls cannot grow the VM value region. All argument roots remain
-                // effective.
+                // 回调借用连续实参区期间不增长值区或帧表，也不重入本 VM。
+                // 保留原 sp，使回调中的 Heap 分配和 GC 仍能扫描全部实参。
                 target.invoke(context, std::span<const Value>(values_.data() + base, call.arity),
                               result);
+                // 先清旧实参再发布结果，零参数调用也使用预留结果槽；交接不分配或回收。
                 for (std::size_t i = 0; i < call.arity; ++i)
                     values_[base + i] = Value{NullValue{}};
                 current.sp = saved_sp;
-                push(result.get()); // publish result before its stable temporary root is removed
+                push(result.get()); // 结果成为有效操作数后，才允许 result 撤销临时根。
                 break;
             }
             case Op::DROP:
@@ -143,14 +146,12 @@ void VM::execute(const CompiledProgram &program) {
             }
         }
     } catch (const Failure &failure) {
-        // Platform code has no MYB position. Snapshot the active instruction before clearing
-        // frames.
+        // 平台错误可能没有 MYB 位置；先补充当前指令位置，再清除用于定位的帧。
         auto header = failure.header();
         if (!header.span && !frames_.empty())
             header.span = unit.locations[frames_.back().executing_ip];
         clear();
-        // The fixed first-error record keeps its original category if this diagnostic copy
-        // allocates.
+        // 重建异常的宿主文本可能分配；固定首错记录仍保留原有失败类别。
         if (header.domain == FailureDomain::Runtime)
             throw MybRuntimeFailure(header, failure.what());
         throw HostFailure(header, failure.what());

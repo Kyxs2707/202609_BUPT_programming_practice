@@ -57,7 +57,7 @@ SourcePosition SourceManager::locate(SourceId id, std::uint64_t offset) const {
         const auto decoded = utf8::decode_one(source.bytes, current);
         if (!decoded || current + decoded->width > offset)
             break;
-        // An offset between CR and LF belongs to the previous line's end.
+        // CRLF 内部偏移仍归前一行行尾，避免把同一次换行计入列数。
         if (decoded->value == '\r' || decoded->value == '\n')
             break;
         ++column;

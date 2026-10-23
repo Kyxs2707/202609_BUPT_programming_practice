@@ -1,3 +1,6 @@
+/** @file
+ * @brief 在编译期核验值表示依赖的语言版本、字节宽度和 binary64 浮点条件。
+ */
 #include <climits>
 #include <limits>
 #include <span>

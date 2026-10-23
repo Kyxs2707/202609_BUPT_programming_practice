@@ -22,6 +22,12 @@ std::string_view trim_ascii(std::string_view s) noexcept {
         s.remove_suffix(1);
     return s;
 }
+/**
+ * @brief 在调用数值库前完整检查 MYB 十进制浮点文法。
+ * @param[in] s 已按模式处理首尾空白的借用文本，仅在本次调用内使用。
+ * @param[in] mode 源码模式要求小数点或指数，转换模式另允许符号和整数形式。
+ * @return 文本全部符合对应模式时为 true。
+ */
 bool float_grammar(std::string_view s, ParseMode mode) noexcept {
     std::size_t i = 0;
     if (mode == ParseMode::Conversion && !s.empty() && (s[0] == '+' || s[0] == '-'))
@@ -79,6 +85,7 @@ NumericParseResult<double> DecimalCodec::parse_float(std::string_view text, Pars
     auto parsed = fast_float::from_chars(text.data(), text.data() + text.size(), result);
     if (parsed.ptr != text.data() + text.size())
         return {{}, NumericParseError::Content};
+    // 库把下溢到零也报告为范围错误；只放行确实为正负零的此类结果。
     if ((parsed.ec == std::errc{} && std::isfinite(result)) ||
         (parsed.ec == std::errc::result_out_of_range && result == 0.0))
         return {result, NumericParseError::None};
@@ -97,6 +104,7 @@ NumericParseResult<std::int64_t> DecimalCodec::parse_int(std::string_view text) 
     for (char c : text)
         if (!digit(c))
             return {{}, NumericParseError::Content};
+    // 负数允许幅值达到 2^63；全程先用无符号数累积，避免对有符号最小值取负。
     const std::uint64_t limit =
         negative ? std::uint64_t{1} << 63 : std::uint64_t(std::numeric_limits<std::int64_t>::max());
     std::uint64_t magnitude = 0;
@@ -118,6 +126,7 @@ std::string DecimalCodec::format_float(double value) {
     if (value == 0.0)
         return std::signbit(value) ? "-0.0" : "0.0";
     char buffer[32];
+    // 使用长度返回值读取栈缓冲，不依赖 NUL；Ryu 负责最短回读数字，后续只调整记法。
     const int size = d2s_buffered_n(value, buffer);
     if (size <= 0 || size > 32)
         invalid_codec_value();
@@ -158,6 +167,7 @@ std::string DecimalCodec::format_float(double value) {
     }
     if (minus_exponent)
         exponent = -exponent;
+    // 将最短数字写成 coefficient * 10^q，再独立选择 MYB 规定的定点或科学记法。
     int q = exponent - fractional;
     while (coefficient.size() > 1 && coefficient.back() == '0') {
         coefficient.pop_back();

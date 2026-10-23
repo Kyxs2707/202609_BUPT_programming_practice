@@ -4,9 +4,14 @@
 %{
 #include "frontend/scanner.hpp"
 #include <string_view>
+// M1 只扫描已实现的表达式子集；其余语言关键字在首错处终止。
+// 名称和数字词素复制后交付；字符串状态交付完整范围和已解码文本。
 #define YY_DECL myb::Parser::symbol_type raw_lex(yyscan_t yyscanner)
+// 空白、注释和 BOM 也按实际匹配字节推进，避免预读影响源码位置。
 #define YY_USER_ACTION yyextra->match(static_cast<std::size_t>(yyleng));
+// 后端错误通过异常展开，交由 Scanner 清理句柄和分配登记。
 #define YY_FATAL_ERROR(message) myb::flex_fatal(message,yyscanner)
+// 完整 symbol 接口的默认终止路径也须返回带范围的 EOF。
 #define yyterminate() return myb::Parser::make_YYEOF(yyextra->eof())
 using myb::Parser;
 %}
@@ -15,6 +20,7 @@ EXP [eE][+-]?{DIGIT}+
 FLOATING {DIGIT}+\.{DIGIT}+({EXP})?|{DIGIT}+{EXP}
 IDENT [A-Za-z_][A-Za-z_0-9]*
 UTF8 [\xC2-\xDF][\x80-\xBF]|[\xE0-\xEF][\x80-\xBF]{2}|[\xF0-\xF4][\x80-\xBF]{3}
+ /* UTF-8 已由 SourceManager 验证；非法源码字符按完整码点匹配。 */
 %%
 \xEF\xBB\xBF {if(yyextra->matched.begin!=0)yyextra->lexical_error("unexpected BOM");}
 [ \t\r\n]+ {}

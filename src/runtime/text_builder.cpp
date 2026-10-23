@@ -51,7 +51,7 @@ void TextBuilder::append(std::span<const char> bytes) {
         if (grows)
             TestHooks::hit(FaultPoint::Payload);
 #endif
-        // string::append handles input that aliases its own current byte storage.
+        // 由 string::append 处理输入与当前缓冲重叠的情况，保持自追加语义。
         buffer_.append(bytes.data(), bytes.size());
         if (grows) {
             heap_.update_builder(accounted_capacity_, buffer_.capacity());

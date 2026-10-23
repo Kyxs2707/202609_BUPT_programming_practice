@@ -29,6 +29,13 @@ class ForStmt;
 class ReturnStmt;
 class BreakStmt;
 class ContinueStmt;
+/**
+ * @brief 为每种具体 AST 节点提供只读访问入口。
+ *
+ * visit 的参数借用被访问树，仅在所属树存活期间有效。各重载自行选择
+ * 子节点访问顺序并保存阶段状态；accept 仅作分派。新增节点时，
+ * 检查器和生成器须同时实现对应重载，不能用默认空实现跳过检查。
+ */
 class AstVisitor {
   public:
     virtual ~AstVisitor() noexcept = default;

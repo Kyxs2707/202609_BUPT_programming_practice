@@ -3,6 +3,7 @@ namespace myb {
 [[noreturn]] void fail(ErrorSite site, FailureDomain domain, ReasonCode reason,
                        std::string_view message, std::optional<std::uint32_t> os_code) {
     FailureHeader h{domain, reason, site.span, os_code};
+    // 消息复制可能分配失败，须在构造详细异常前留下可决定退出状态的首错。
     site.failure.record_first(h);
     switch (domain) {
     case FailureDomain::Frontend:

@@ -8,6 +8,7 @@ void verify(CodeUnit &unit, EmergencyFailure &first) {
     };
     if (unit.instructions.empty() || unit.instructions.size() != unit.locations.size())
         bad();
+    // M1 没有可执行跳转，按唯一线性路径计算栈深，不展开内置回调。
     std::uint64_t depth = 0, maximum = 0;
     bool halted = false;
     for (auto ins : unit.instructions) {
