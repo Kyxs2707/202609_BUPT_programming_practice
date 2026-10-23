@@ -76,6 +76,7 @@ def load_manifest(path: Path) -> list[Case]:
     require(type(root.get("schema_version")) is int and root["schema_version"] == 1,
             "manifest schema_version must be 1")
     require(isinstance(root.get("cases"), list), "manifest cases must be a list")
+    require(bool(root["cases"]), "manifest cases must not be empty")
     require(set(root) <= {"schema_version", "cases"}, "unknown manifest field")
     base = path.resolve().parent
     cases: list[Case] = []

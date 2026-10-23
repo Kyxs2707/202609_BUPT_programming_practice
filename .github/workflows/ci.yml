@@ -1,0 +1,74 @@
+name: MYB CI
+
+on:
+  pull_request:
+    branches: [dev, main]
+  push:
+    branches: [dev]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows-debug:
+    name: windows-debug
+    runs-on: windows-2025
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: msys2/setup-msys2@ec48f7c5447b3140e2b088413ae3a55687bccb6e # v2.33.0
+        id: msys2
+        with:
+          msystem: UCRT64
+          update: true
+          install: >-
+            mingw-w64-ucrt-x86_64-gcc
+            mingw-w64-ucrt-x86_64-cmake
+            mingw-w64-ucrt-x86_64-ninja
+            mingw-w64-ucrt-x86_64-python
+            flex
+            bison
+      - name: Build and test Debug
+        shell: pwsh
+        run: ./tools/ci.ps1 -Configuration Debug -Msys2Root '${{ steps.msys2.outputs.msys2-location }}'
+      - name: Upload Debug logs
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: windows-debug-logs
+          path: |
+            build/ci-logs/debug/
+            build/debug/CMakeFiles/CMakeConfigureLog.yaml
+          if-no-files-found: warn
+
+  windows-release:
+    name: windows-release
+    runs-on: windows-2025
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: msys2/setup-msys2@ec48f7c5447b3140e2b088413ae3a55687bccb6e # v2.33.0
+        id: msys2
+        with:
+          msystem: UCRT64
+          update: true
+          install: >-
+            mingw-w64-ucrt-x86_64-gcc
+            mingw-w64-ucrt-x86_64-cmake
+            mingw-w64-ucrt-x86_64-ninja
+            mingw-w64-ucrt-x86_64-python
+            flex
+            bison
+      - name: Build and test Release
+        shell: pwsh
+        run: ./tools/ci.ps1 -Configuration Release -Msys2Root '${{ steps.msys2.outputs.msys2-location }}'
+      - name: Upload Release logs
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: windows-release-logs
+          path: |
+            build/ci-logs/release/
+            build/release/CMakeFiles/CMakeConfigureLog.yaml
+          if-no-files-found: warn

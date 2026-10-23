@@ -19,3 +19,12 @@ python tools/run_blackbox.py --interpreter build/debug/myb.exe
 ```
 
 开发改动位于 `dev` 或其派生分支；`main` 仅通过 PR 合并。
+
+CI 使用同一脚本运行 Windows Debug/Release 干净构建与回归：
+
+```powershell
+pwsh -File ./tools/ci.ps1 -Configuration Debug -Msys2Root D:/msys64
+pwsh -File ./tools/ci.ps1 -Configuration Release -Msys2Root D:/msys64
+```
+
+脚本需要 PowerShell 7+（`pwsh`）；MSYS2 安装根按实际环境传入。自动运行和远端门禁的独立验收状态见 [CI 与合并规则](docs/CI与合并规则.md)。

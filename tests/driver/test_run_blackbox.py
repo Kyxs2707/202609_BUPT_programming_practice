@@ -41,6 +41,11 @@ class BlackboxDriverTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertIn(b"1 passed", result.stdout)
 
+    def test_rejects_empty_case_list(self):
+        result = self.run_cases([])
+        self.assertEqual(result.returncode, 2, result.stdout + result.stderr)
+        self.assertNotIn(b"PASS", result.stdout)
+
     def test_bad_golden_fails_and_next_case_runs(self):
         result = self.run_cases([self.case("bad", expect_stdout_file="empty.bin"), self.case("next")])
         self.assertEqual(result.returncode, 1, result.stdout + result.stderr)

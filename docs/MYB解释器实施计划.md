@@ -10,7 +10,7 @@
 
 **Spec:** [MYB 解释器设计](./MYB解释器设计.md)；语言行为以 [MYB 语言规范](./MYB语言规范.md) v0.2（含 2026-10-22 D63 澄清）为准；完整课程交付顺序见 [项目实施步骤](./superpowers/plans/2026-10-11-myb-implementation.md)。
 
-状态：用户于 2026-10-22 明确要求“好，你先完成M1吧”，已授权任务 01–06。**M1 已于 2026-10-23 完成实现与验收；M2–M4 未启动。** 2026-10-23 按用户要求在 M1 与 M2 之间新增 CI-01/CI-02 两项工程任务，当前仅规划，尚未实现或配置远端。 独立构建、源码前端与堆模块并行实施，由根代理集成并安排一次独立整体审查。实测命令、范围与调整见 [构建与测试](./构建与测试.md) 和 [测试报告](./测试报告.md)。
+状态：用户于 2026-10-22 明确要求“好，你先完成M1吧”，已授权任务 01–06。**M1 已于 2026-10-23 完成实现与验收；M2–M4 未启动。** 2026-10-23 按用户要求在 M1 与 M2 之间新增 CI-01/CI-02 两项工程任务，用户已授权实施；本地工作流、脚本与回归已实现，远端运行待验收；私有仓库保护 API 返回需 GitHub Pro/公开仓库的 403，CI-02 尚未生效。 独立构建、源码前端与堆模块并行实施，由根代理集成并安排一次独立整体审查。实测命令、范围与调整见 [构建与测试](./构建与测试.md) 和 [测试报告](./测试报告.md)。
 
 ## Global Constraints（全局约束）
 
@@ -227,7 +227,7 @@ print(1 + 2);
 
 ## CI：M1 后、M2 前的自动构建与合并检查
 
-2026-10-23 用户要求将 CI 加入计划。新增 CI-01、CI-02 两项工程任务，保持原任务 01–18 编号不变；合计 18 项解释器任务＋2 项 CI 任务。本节当前只有计划，工作流、GitHub 运行记录与远端合并规则均尚未实施。CI-01 自动执行构建/测试，CI-02 负责平台强制合并条件，两者分别验收。
+2026-10-23 用户要求将 CI 加入计划。新增 CI-01、CI-02 两项工程任务，保持原任务 01–18 编号不变；合计 18 项解释器任务＋2 项 CI 任务。本节已获用户授权实施，CI-01 本地实现/回归已通过，远端验收待完成；CI-02 因 GitHub 私有仓库套餐能力限制受阻。证据见 [CI 与合并规则](./CI与合并规则.md)。CI-01 自动执行构建/测试，CI-02 负责平台强制合并条件，两者分别验收。
 
 ### 任务 CI-01：GitHub Actions Windows 构建与自动回归
 
@@ -248,7 +248,7 @@ print(1 + 2);
 
 两 job 独立检出、生成并构建，不能借用另一个 job 或本机的产物。configure 离线核验仓库内数值快照 SHA-256；工具安装联网与 configure 不联网分开处理。仅权限 `contents: read`，不使用 pull_request_target 来运行 PR 代码；失败后仍上传已有日志，不能以 continue-on-error 把失败改为成功。
 
-- [ ] **1. 写防假绿的红测试。** 在 driver 自测加入 `test_rejects_empty_case_list`，提交 schema_version=1、cases=[] 的合法 JSON，断言驱动退出 2、未打印 PASS；运行 `python -m unittest discover -s tests/driver -v`，当前空清单会返回成功，应真实观测到断言失败。保留原有坏 golden、超时后继续、严格 UTF-8 与隔离用例。
+- [x] **1. 写防假绿的红测试。** 在 driver 自测加入 `test_rejects_empty_case_list`，提交 schema_version=1、cases=[] 的合法 JSON，断言驱动退出 2、未打印 PASS；运行 `python -m unittest discover -s tests/driver -v`，当前空清单会返回成功，应真实观测到断言失败。保留原有坏 golden、超时后继续、严格 UTF-8 与隔离用例。
 
 ```python
 def test_rejects_empty_case_list(self):
@@ -257,8 +257,8 @@ def test_rejects_empty_case_list(self):
     self.assertNotIn(b"PASS", result.stdout)
 ```
 
-- [ ] **2. 实现并验证测试入口。** 驱动将空 cases 作为 manifest 错误返回 2；CI 包装器对 unittest 用同一 discover 得到非空 suite 后实际运行，内部程序无匹配本已返回非零；逐条保留失败状态。新增的空 manifest 测试和现有 driver 全套均为绿。数量来自实际运行，不用固定的 M1 25/26/8/7 代替测试发现，也不用当前未接入的 ctest 代替内部测试。
-- [ ] **3. 实现工作流与可本机复现的脚本。** 配置/构建命令沿用任务 01/18，分别选择 Debug/ON 和 Release/OFF，两个 job 都从空构建目录并行构建。Debug 跑 `build/debug/myb_internal_tests.exe`；两种配置均显式设置 MYB_INTERPRETER 后运行 CLI unittest，再运行默认 `python tools/run_blackbox.py --interpreter <本配置myb.exe>`；driver 自测归 Debug。不固定为 smoke 子 manifest，不依赖 examples/hello.myb 固定输出，保留字节 fixtures 的 .gitattributes。
+- [x] **2. 实现并验证测试入口。** 驱动将空 cases 作为 manifest 错误返回 2；CI 包装器对 unittest 用同一 discover 得到非空 suite 后实际运行，内部程序无匹配本已返回非零；逐条保留失败状态。新增的空 manifest 测试和现有 driver 全套均为绿。数量来自实际运行，不用固定的 M1 25/26/8/7 代替测试发现，也不用当前未接入的 ctest 代替内部测试。
+- [x] **3. 实现工作流与可本机复现的脚本。** 配置/构建命令沿用任务 01/18，分别选择 Debug/ON 和 Release/OFF，两个 job 都从空构建目录并行构建。Debug 跑 `build/debug/myb_internal_tests.exe`；两种配置均显式设置 MYB_INTERPRETER 后运行 CLI unittest，再运行默认 `python tools/run_blackbox.py --interpreter <本配置myb.exe>`；driver 自测归 Debug。不固定为 smoke 子 manifest，不依赖 examples/hello.myb 固定输出，保留字节 fixtures 的 .gitattributes。
 
 ```powershell
 & ./tools/ci.ps1 -Configuration Debug -Msys2Root <实际MSYS2根目录>
