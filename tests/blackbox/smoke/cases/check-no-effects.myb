@@ -1,0 +1,1 @@
+print(write("X"),1); read_line(); print(1/0);
