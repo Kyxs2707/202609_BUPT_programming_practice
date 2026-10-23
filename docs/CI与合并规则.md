@@ -2,7 +2,7 @@
 
 日期：2026-10-23。范围为 [实施计划](./MYB解释器实施计划.md) 的 CI-01/CI-02，M2–M4 未启动。
 
-CI 自动运行与 GitHub 强制合并门禁分别验收。本地 Debug/Release 脚本及远端正常→错误预期→恢复三阶段已验收；仅文档 PR 触发验证待完成。**CI-02 受 GitHub 私有仓库套餐能力限制，尚未生效，整个 CI 阶段仍未完成**。
+CI 自动运行与 GitHub 强制合并门禁分别验收，**CI-01 已完成实现与验收**。本地 Debug/Release 脚本及远端正常→错误预期→恢复三阶段已验收；普通代码 PR 与独立的仅文档 PR 均已实际触发两项检查。**CI-02 受 GitHub 私有仓库套餐能力限制，尚未生效，整个 CI 阶段仍未完成**。
 
 ## 自动构建与回归
 
@@ -56,7 +56,12 @@ CI 脚本要求 PowerShell 7+，与 GitHub 的 `shell: pwsh` 一致；通过 `#R
 
 三个阶段均实际生成 `windows-debug-logs` 与 `windows-release-logs`，可在各运行页 Artifacts 下载；完整 job 日志也在运行页。错误预期阶段仅把 `three.stdout` 从 `3\n` 改为 `4\n`，两 job 均报告 `24 passed, 1 failed, 25 total`、stdout 预期 4/实际 3，并由脚本保留退出 1。恢复提交的完整源码树与正常提交相同（`git diff 0070a4c 9787e6f --exit-code` 为 0），最终文件仍为原始 `3\n` 字节。实际检查名为 `windows-debug`、`windows-release`，来源 GitHub Actions App ID `15368`。
 
-仅文档 PR 须在代码合入 dev 后独立建立，累计 diff 必须只有文档；不能将 PR #1 内的文档提交冒充仅文档 PR。PR #1 已按用户授权合并到 dev（`d016dc2f12c9a75efe5149f2222e8340e577f8a2`），main 保持 `b79e69dd931a98a7b103651b6d3ccbf6affe2f44`。本节文档收尾从新 dev 建立独立文档 PR，检查触发结果随后记录。代码 PR 合并前的最新文档提交也已在 [运行 39877521916](https://github.com/Kyxs2707/202609_BUPT_programming_practice/actions/runs/39877521916) 两 job 全绿。
+仅文档 PR 须在代码合入 dev 后独立建立，累计 diff 必须只有文档；不能将 PR #1 内的文档提交冒充仅文档 PR。PR #1 已按用户授权合并到 dev（`d016dc2f12c9a75efe5149f2222e8340e577f8a2`），main 保持 `b79e69dd931a98a7b103651b6d3ccbf6affe2f44`。本节文档收尾从新 dev 建立独立文档 PR，触发证据如下。代码 PR 合并前的最新文档提交也已在 [运行 39877521916](https://github.com/Kyxs2707/202609_BUPT_programming_practice/actions/runs/39877521916) 两 job 全绿。
+
+
+仅文档验收为 [PR #2 → dev](https://github.com/Kyxs2707/202609_BUPT_programming_practice/pull/2)。初始提交 `77ae9d5c8ee3688ad41c7a0709b78b861116e6d8` 的累计差异只有 `docs/CI与合并规则.md`，在 [运行 39877939248](https://github.com/Kyxs2707/202609_BUPT_programming_practice/actions/runs/39877939248) 实际出现 `windows-debug`、`windows-release`，证明路径筛选没有省略文档检查。随后本 PR 只补充 Markdown 验收记录和计划状态；最新提交与结果以 PR 检查页为准。本 PR 保持开放供审阅。
+
+合入 dev 的提交 `d016dc2f12c9a75efe5149f2222e8340e577f8a2` 也实际以 `push` 事件触发 [运行 39877856449](https://github.com/Kyxs2707/202609_BUPT_programming_practice/actions/runs/39877856449)，两个固定 job 均出现。
 
 ## 远端门禁现状与恢复步骤
 
