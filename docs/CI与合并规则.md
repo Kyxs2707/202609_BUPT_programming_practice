@@ -44,7 +44,7 @@ CI 脚本要求 PowerShell 7+，与 GitHub 的 `shell: pwsh` 一致；通过 `#R
 
 ## GitHub 运行验收
 
-首轮 [运行 39875495711](https://github.com/Kyxs2707/202609_BUPT_programming_practice/actions/runs/39875495711) 实际检出 CLI 自测路径表示差异：runner 的 MinGW Python 输出 `/` 路径，Windows 宿主诊断输出 `\`。已只修正测试的 native 路径预期，保持行列、错误类别、退出值与源码未被修改的断言；本机 Debug/Release 各 7 项 CLI 复验通过，远端继续复验。该次失败的两个 job 仍成功上传日志。
+首轮 [运行 39875495711](https://github.com/Kyxs2707/202609_BUPT_programming_practice/actions/runs/39875495711) 实际检出 CLI 自测路径表示差异：runner 的 MinGW Python 输出 `/` 路径，Windows 宿主诊断输出 `\`。已只修正测试的 native 路径预期，保持行列、错误类别、退出值与源码未被修改的断言；本机 Debug/Release 各 7 项 CLI 复验通过，远端继续复验。该次失败的两个 job 仍成功上传日志。同样的路径差异会影响黑盒 `$SCRIPT`；本机正斜杠路径探针实际复现 14/25 例路径匹配失败后，驱动改为在 Windows 上向解释器传入原生路径，并对相同参数转义生成占位符。未归一化实际输出或放宽诊断断言；探针、driver 自测与 Release 黑盒全部通过。
 
 待补充正常 → 错误 `three.stdout` → 恢复三个提交各自的两项 job 状态、运行链接、提交 SHA 与日志入口。远端 dev 仍停在早期文档提交，验证分支需要携带本地已有、已验收的 M1 基线；本次不改动解释器功能。
 

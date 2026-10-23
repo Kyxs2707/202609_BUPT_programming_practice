@@ -6,6 +6,7 @@ import argparse
 from dataclasses import dataclass
 import json
 import math
+import os
 from pathlib import Path, PurePosixPath, PureWindowsPath
 import re
 import shutil
@@ -159,7 +160,12 @@ def run_case(interpreter: Path, case: Case) -> list[str]:
         command = [str(interpreter)]
         if case.mode == "check":
             command.append("--check")
-        command.append(str(script))
+        # Use the Windows host's native spelling for both argv and $SCRIPT,
+        # independently of MinGW Python's pathlib separator preference.
+        script_argument = str(script)
+        if os.name == "nt":
+            script_argument = script_argument.replace("/", "\\")
+        command.append(script_argument)
         try:
             child = subprocess.run(command, input=case.stdin, stdout=subprocess.PIPE,
                                    stderr=subprocess.PIPE, cwd=cwd, timeout=case.timeout,
@@ -181,7 +187,7 @@ def run_case(interpreter: Path, case: Case) -> list[str]:
             except UnicodeDecodeError as error:
                 errors.append(f"stderr is not valid UTF-8: {error}")
             else:
-                pattern = case.stderr_regex.replace("$SCRIPT", re.escape(str(script)))
+                pattern = case.stderr_regex.replace("$SCRIPT", re.escape(script_argument))
                 if re.fullmatch(pattern, decoded) is None:
                     errors.append(f"stderr regex {pattern!r} does not fully match {decoded[:320]!r}")
         for target, expected in case.expected_files:
